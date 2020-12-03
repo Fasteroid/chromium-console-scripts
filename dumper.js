@@ -18,8 +18,7 @@ function isObject(val) {
         if (val + "" == "[object Window]") { // technically yes, but no.
             return false; 
         }
-        var toStringTryCatchBait = val + "";
-        return (typeof val === 'function') || (typeof val === 'object');
+        return (typeof val === 'function') || (typeof val === 'object' || (typeof val === 'symbol'));
     }
     catch (e) {
         return false;
@@ -34,9 +33,14 @@ function recursivelyExplore(obj, path, depth) {
         if( HAX.BANNED_KEYS.includes(key) ){ continue; }
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
-        if (isObject(obj2) && typeof obj !== 'function') {
+        if( isObject(obj2) && typeof obj !== 'function' ){
             if (depth < HAX.MAX_RECUR) {
-                try{ recursivelyExplore(obj2, path + "." + key, depth + 1); } catch (e){ console.log("exploration error at "+path); }
+                try{ 
+                    recursivelyExplore(obj2, path + "." + key, depth + 1); 
+                } 
+                catch (e){
+                    HAX.log = HAX.log + (path + "\t".repeat(Math.max(0,Math.ceil((128-path.length)/4))) + "= [Unprintable] "+(typeof obj2)  ) + "\n";
+                }
             }
         }
         else if( !HAX.IGNORE_NULL || obj2!==null ){
@@ -46,10 +50,15 @@ function recursivelyExplore(obj, path, depth) {
                     console.log(HAX.log);
                     HAX.log = "";
                 }
-                HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= "+obj2 ) + "\n";
+                if( typeof obj2 === 'symbol' ){
+                    HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= [Symbol] "+obj2.valueOf() ) + "\n";
+                }
+                else{
+                    HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= "+obj2 ) + "\n";
+                }
             }
             catch (e) {
-                HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "~ unprintable" ) + "\n";
+                HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= [Unprintable] "+(typeof obj2) ) + "\n";
             }
         }
     }
