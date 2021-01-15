@@ -1,4 +1,4 @@
-FOREWORD: *Please do not use these scripts to take advantage of poorly written websites!  If you do, you suck!*
+DISCLAIMER: *Please do not use these scripts to take advantage of poorly written websites!*
 
 # JS Global Variable Dumper
 Paste in chrome console and run to print "all" global JS variables. It can get memory intensive so make sure to bring lots of ram if you plan to explore everything. This is written like a skript kiddie tool, so the code is INTENTIONALLY cringe—please don't judge.
