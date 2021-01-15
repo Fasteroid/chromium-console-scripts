@@ -7,7 +7,7 @@ var SPEC = [];
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  O M N I P R E S E N C E
 */
-SPEC.EXPLORATION_BLACKLIST = ["SPEC","traversalMarker","$","jQuery","Ajax","console","headerController","tourController"]; 
+SPEC.EXPLORATION_BLACKLIST = ["SPEC","traversalMarker","$","jQuery","Ajax","console","headerController","JSInterpreter"]; 
 SPEC.MAX_SEARCH_DEPTH      = 10;
 SPEC.DETOUR_NATIVE_FUNCS   = false;
 
@@ -64,7 +64,7 @@ SPEC.construct = function Arguments( args ) { for (let index = 0; index < args.l
 SPEC.seed = Math.random(Date.parse());
 console.log("seed: "+SPEC.seed);
 SPEC.log = "";
-
+SPEC.locations = { }
 
 SPEC.recursivelyExplore = function (obj, path, depth) {    
 
@@ -92,14 +92,16 @@ SPEC.recursivelyExplore = function (obj, path, depth) {
             // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
             obj[key] = (function() {
                 var cached_function = obj2;
+                SPEC.locations[cached_function] = path+"."+key;
                 return function() {
-                    console.groupCollapsed(
-                        SPEC.or(cached_function.name,"anonymous") + "(" + SPEC.join([...arguments]) + ");"
-                    );
+
+                    console.groupCollapsed(SPEC.or(cached_function.name,"anonymous") + "(" + SPEC.join([...arguments]) + ");");
                         console.log(new SPEC.construct([...arguments]));
                         console.log(cached_function);
                         console.log("Stack Trace:\n" + SPEC.trace());
+                        console.log("Location:\n" + SPEC.locations[cached_function]);
                     console.groupEnd();
+
                     var result = cached_function.apply(this, arguments); // use .apply() to call it
                     return result;
                 };
