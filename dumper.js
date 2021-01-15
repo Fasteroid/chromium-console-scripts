@@ -8,60 +8,86 @@ var HAX = [];
  *  hit f12 and paste it in chrome consloe then hit enter 2 hack XDDDDDDD
  *  advenced settings 4 pro haxxorz are below dont touch them unless ur a pro haxxor
 */
-HAX.BANNED_KEYS = ["HAX","traversalMarker","$","jQuery","Ajax"];
-HAX.MAX_RECUR   = 15;
-HAX.IGNORE_NULL = true;
+HAX.BANNED_KEYS  = ["HAX","traversalMarker","$","jQuery","Ajax"]; 
+HAX.MAX_RECUR    = 15;
+HAX.IGNORE_NULL  = true;
+HAX.IGNORE_FUNC  = false;
+HAX.NEWLINE_AT   = 96;
+HAX.SEPARATOR    = "\n";
 
-function isObject(val) {
+HAX.shouldExplore = function(val) {
     try { 
         if (val === undefined || val === null) { return false }
-        if (val + "" == "[object Window]") { // technically yes, but no.
-            return false; 
-        }
-        return (typeof val === 'function') || (typeof val === 'object' || (typeof val === 'symbol'));
+        if (val + "" == "[object Window]") { return false; }
+        return typeof val === 'object';
     }
     catch (e) {
         return false;
     }
 }
+
+HAX.format = function(path,value){
+    if( value.length > HAX.NEWLINE_AT*0.7 || value.search("\n") != -1 ){
+        path = path + " = \n" + value + "\n" + HAX.SEPARATOR
+        if( !HAX.lastseparated ){
+            HAX.lastseparated = true;
+            path = HAX.SEPARATOR + path;
+        }
+        return path;
+    }
+    else if( path.length > HAX.NEWLINE_AT ){
+        return path + "\t".repeat(Math.max(0,Math.ceil((HAX.NEWLINE_AT-path.length)/4))) + "= \n" + value + "\n"
+    }
+    HAX.lastseparated = false;
+    return path + "\t".repeat(Math.max(0,Math.ceil((HAX.NEWLINE_AT-path.length)/4))) + "= " + value + "\n"
+}
+
 HAX.log = "";
 HAX.seed = Math.random(Date.parse());
 console.log("seed: "+HAX.seed);
-function recursivelyExplore(obj, path, depth) {    
+HAX.lastseparated = false
+
+HAX.recursivelyExplore = function (obj, path, depth) {    
+
     obj.traversalMarker = HAX.seed;
     for (const key in obj) {
+
         if( HAX.BANNED_KEYS.includes(key) ){ continue; }
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
-        if( isObject(obj2) && typeof obj !== 'function' ){
+
+        if( HAX.shouldExplore(obj2) ){
             if (depth < HAX.MAX_RECUR) {
                 try{ 
-                    recursivelyExplore(obj2, path + "." + key, depth + 1); 
+                    HAX.recursivelyExplore(obj2, path + "." + key, depth + 1); 
                 } 
                 catch (e){
-                    HAX.log = HAX.log + (path + "\t".repeat(Math.max(0,Math.ceil((128-path.length)/4))) + "= [Unprintable] "+(typeof obj2)  ) + "\n";
+                    HAX.log = HAX.log + HAX.format(path, "[Unexplorable]");
                 }
             }
         }
-        else if( !HAX.IGNORE_NULL || obj2!==null ){
+
+        else if( ( !HAX.IGNORE_NULL || obj2!==null ) && ( !HAX.IGNORE_FUNC || typeof obj2 !== 'function' ) ){
             try {
                 var finalPath = path + "." + key
-                if ( HAX.log.length > 134217728) {
+                if ( HAX.log.length > 134217728 ) {
                     console.log(HAX.log);
                     HAX.log = "";
                 }
                 if( typeof obj2 === 'symbol' ){
-                    HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= [Symbol] "+obj2.valueOf() ) + "\n";
+                    HAX.log = HAX.log + HAX.format(finalPath, "[Symbol] " + obj2.valueOf());
                 }
-                else{
-                    HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= "+obj2 ) + "\n";
+                else {
+                    HAX.log = HAX.log + HAX.format(finalPath, obj2+"");
                 }
             }
             catch (e) {
-                HAX.log = HAX.log + (finalPath + "\t".repeat(Math.max(0,Math.ceil((128-finalPath.length)/4))) + "= [Unprintable] "+(typeof obj2) ) + "\n";
+                console.log(e);
+                HAX.log = HAX.log + HAX.format(finalPath,"[Unprintable " + (typeof obj2) + "]");
             }
         }
+
     }
 }
-recursivelyExplore(window, "window", 0);
+HAX.recursivelyExplore(window, "window", 0);
 console.log(HAX.log);
