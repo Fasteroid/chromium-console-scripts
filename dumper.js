@@ -82,7 +82,6 @@ HAX.recursivelyExplore = function (obj, path, depth) {
                 }
             }
             catch (e) {
-                console.log(e);
                 HAX.log = HAX.log + HAX.format(finalPath,"[Unprintable " + (typeof obj2) + "]");
             }
         }
