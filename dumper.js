@@ -8,12 +8,12 @@ var HAX = [];
  *  hit f12 and paste it in chrome consloe then hit enter 2 hack XDDDDDDD
  *  advenced settings 4 pro haxxorz are below dont touch them unless ur a pro haxxor
 */
-HAX.BANNED_KEYS  = ["HAX","traversalMarker","$","jQuery","Ajax"]; 
-HAX.MAX_RECUR    = 15;
-HAX.IGNORE_NULL  = true;
-HAX.IGNORE_FUNC  = false;
-HAX.NEWLINE_AT   = 96;
-HAX.SEPARATOR    = "\n";
+HAX.EXPLORATION_BLACKLIST = ["HAX","traversalMarker","$","jQuery","Ajax","jQuery2240242725290525418251","tourController"]; 
+HAX.MAX_SEARCH_DEPTH      = 10;
+HAX.IGNORE_NULL           = true;
+HAX.IGNORE_FUNC           = false;
+HAX.NEWLINE_AT            = 96;
+HAX.SEPARATOR             = "\n";
 
 HAX.shouldExplore = function(val) {
     try { 
@@ -52,12 +52,12 @@ HAX.recursivelyExplore = function (obj, path, depth) {
     obj.traversalMarker = HAX.seed;
     for (const key in obj) {
 
-        if( HAX.BANNED_KEYS.includes(key) ){ continue; }
+        if( HAX.EXPLORATION_BLACKLIST.includes(key) ){ continue; }
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
 
         if( HAX.shouldExplore(obj2) ){
-            if (depth < HAX.MAX_RECUR) {
+            if (depth < HAX.MAX_SEARCH_DEPTH) {
                 try{ 
                     HAX.recursivelyExplore(obj2, path + "." + key, depth + 1); 
                 } 
