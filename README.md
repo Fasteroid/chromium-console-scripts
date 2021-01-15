@@ -1,6 +1,9 @@
 # JS Global Dumper: Chrome Console Edition
-Here's little script you can paste in chrome console to dump all global values.  It can get memory intensive so make sure to bring lots of ram if you plan to explore everything.
+Paste in chrome console and run to print "all" global JS variables. It can get memory intensive so make sure to bring lots of ram if you plan to explore everything.
+This is written like a skript kiddie tool, so the code is INTENTIONALLY cringe.
 
-Please keep in mind that since this is a skript kiddie tool, the code is INTENTIONALLY written with cringe variables like `HAX` or whatever.
+# JS Function Call Inspector: 
+Paste in chrome console and run to attach debug events to "every" JS function in use. If a website already runs poorly, this script will amplify the lag like 50x lol
+This is actually meant to be a serious debugging / reverse engineering tool.  Have fun!
 
-DISCLAIMER: I do not condone hacking! Do NOT use this to take advantage of poorly written websites!
+I do not condone "hacking". Please do not use these to take advantage of poorly written websites.
