@@ -7,7 +7,7 @@ var SPEC = [];
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  O M N I P R E S E N C E
 */
-SPEC.EXPLORATION_BLACKLIST = ["SPEC","traversalMarker","$","jQuery","Ajax","console","headerController","JSInterpreter"]; 
+SPEC.EXPLORATION_BLACKLIST = ["SPEC","traversalMarker","$","jQuery","Ajax","console"]; 
 SPEC.MAX_SEARCH_DEPTH      = 10;
 SPEC.DETOUR_NATIVE_FUNCS   = false;
 
