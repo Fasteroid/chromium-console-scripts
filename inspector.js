@@ -18,8 +18,10 @@ inspector.FUNCTION_BLACKLIST    = ["log"];
 inspector.MAX_SEARCH_DEPTH      = 6;
 inspector.DETOUR_NATIVE_FUNCS   = false;
 
-inspector.LOG_BURST_LIMIT  = 64;  
-inspector.LOG_BURST_RESET  = 100; // in ms
+// these help with log antispam so that chrome doesn't insta-die
+// set burst limit to 0 to disable
+inspector.BURST_LIMIT  = 64;  // max per burst reset
+inspector.BURST_RESET  = 100; // in ms
 
 // helper functions
 inspector.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
@@ -29,7 +31,7 @@ inspector.trace = function(){ let trace = (new Error().stack).replaceAll("   ","
 inspector.construct = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
 inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
-inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.LOG_BURST_RESET ); }
+inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.BURST_RESET ); }
 inspector.resetAntiSpam();
 
 inspector.detour = function (obj, path, depth) { 
@@ -65,12 +67,12 @@ inspector.detour = function (obj, path, depth) {
                 data._function = obj2;
                 data._location = path+"."+key;
                 var new_function = {[obj2.name]: function() { // new wrapped function
-                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.LOG_BURST_LIMIT <= 0 || inspector.logs < inspector.LOG_BURST_LIMIT) ){
+                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.BURST_LIMIT <= 0 || inspector.logs < inspector.BURST_LIMIT) ){
                         inspector.logs++;
                         try{
                             console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
                             console.log(new inspector.construct([...arguments]));
-                            console.log(data.override);
+                            console.log(data._function);
                             console.log("Name: "+data)
                             console.log("Stack Trace:\n" + inspector.trace());
                             console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
