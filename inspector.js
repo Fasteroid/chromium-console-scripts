@@ -10,8 +10,8 @@ var inspector = { traversed: {}, log: [], logs: 0 };
  *  The antispam parameters are used to make sure chrome console isn't overwhelmed.
  * 
  *  FOR ALL DETOURED FUNCTIONS:
- *    ._code is what will be run instead of the original function.  This will be a call-logging detour by default.
- *    ._old will be the original non-detoured function.  Use this to revert function detours.
+ *    .code is what will be run instead of the original function.  This will be a call-logging detour by default.
+ *    .old will be the original non-detoured function.  Use this to revert function detours.
 */
 inspector.EXPLORATION_BLACKLIST = ["inspector"];
 inspector.FUNCTION_BLACKLIST    = ["log"];
@@ -91,8 +91,8 @@ inspector.detour = function (obj, path, depth) {
                     }
                 }
                 new_function._wrapped = true;
-                new_function._code    = data._function;
-                new_function._old     = obj2;
+                new_function.code     = data._function;
+                new_function.old      = obj2;
                 return new_function;
             })();
             if(inspector.log.length > 64){
