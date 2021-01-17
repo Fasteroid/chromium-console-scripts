@@ -1,102 +1,110 @@
 /**************************************
 *  Fast's JS Function Call Inspector: *
-*      Chrome Console Edition    *
+*       Chrome Console Edition        *
 **************************************/
-var spec = [];
+var inspector = { traversed: {}, log: [], logs: 0 };
 
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  T O T A L   O M N I P R E S E N C E!
- *  If total omnipresence breaks the website, try individually detouring elements instead.
- *  The script will try to not detour constructors if DETOUR_CONSTRUCTORS is false.
+ *  You can also detour subsets of the website by calling inspector.detour(window.subset);
+ *  The antispam parameters are used to make sure chrome console isn't overwhelmed.
+ * 
+ *  FOR ALL DETOURED FUNCTIONS:
+ *    ._code is what will be run instead of the original function.  This will be a call-logging detour by default.
+ *    ._old will be the original non-detoured function.  Use this to revert function detours.
 */
-spec.EXPLORATION_BLACKLIST = ["spec","$","jQuery","Ajax","React","angular"]; 
-spec.FUNCTION_BLACKLIST    = ["log"];
-spec.MAX_SEARCH_DEPTH      = 6;
-spec.DETOUR_NATIVE_FUNCS   = false;
-spec.DETOUR_CONSTRUCTORS   = false;
-spec.ANTISPAM_INTERVAL     = 10;
+inspector.EXPLORATION_BLACKLIST = ["inspector"];
+inspector.FUNCTION_BLACKLIST    = ["log"];
+inspector.MAX_SEARCH_DEPTH      = 6;
+inspector.DETOUR_NATIVE_FUNCS   = false;
 
-// helper functions don't touch
-spec.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } }
-spec.doAntispam = spec.ANTISPAM_INTERVAL > 0;
-if( spec.doAntispam ){ spec.loggable = false; spec.antispam = function(){ spec.loggable = true; setTimeout(spec.antispam, spec.ANTISPAM_INTERVAL) }; spec.antispam(); }
-spec.join = function(array){ var output = []; for (let index = 0; index < array.length; index++) { if( array[index] != null ){ if( typeof array[index] === 'string' ){ output[index] = "'" + array[index] + "'"; } else{ output[index] = array[index]; } } else{ output[index] = "null"} } return output.join(", "); }
-spec.isCustom = function(f){ return !(/\{\s*\[native code\]\s*\}/).test(f); }
-spec.or = function(a,b){ if( a != "" ){ return a; } return b; }
-spec.trace = function(){ let trace = (new Error().stack).replaceAll("   ","  ").split("at ").splice(2); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index) + trace[index]; } return output.join(""); }
-spec.construct = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } }
-spec.isConstructor = function(key) { key = key+"a"; let charCode = key.charCodeAt(0); return (charCode >= 65) && (charCode <= 90); }
+inspector.LOG_BURST_LIMIT  = 64;  
+inspector.LOG_BURST_RESET  = 100; // in ms
 
-spec.traversed = { }
-spec.log = "";
-spec.logcount = 0;
+// helper functions
+inspector.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
+inspector.join = function(array){ var output = []; for (let index = 0; index < array.length; index++) { if( array[index] != null ){ if( typeof array[index] === 'string' ){ output[index] = "'" + array[index] + "'"; } else{ output[index] = array[index]; } } else{ output[index] = "null"} } return output.join(", "); } // display null properly
+inspector.isCustom = function(f){ return !(/\{\s*\[native code\]\s*\}/).test(f); } // does it have native code?
+inspector.trace = function(){ let trace = (new Error().stack).replaceAll("   ","  ").split("at ").splice(2); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index) + trace[index]; } return output.join(""); } // get fancy stack trace
+inspector.construct = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
+inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
-spec.detour = function (obj, path, depth) { 
+inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.LOG_BURST_RESET ); }
+inspector.resetAntiSpam();
+
+inspector.detour = function (obj, path, depth) { 
     if( depth == undefined ){ depth = 0 };
-    if( spec.traversed[path] ){ return; }
-    if( depth > spec.MAX_SEARCH_DEPTH ) { return; }
-    spec.traversed[path] = true;
+    if( depth == 0 ){
+        console.groupCollapsed("Detoured Function List");
+    }
+    if( inspector.traversed[path] ){ return; }
+    if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
+    inspector.traversed[path] = true;
     for (const key in obj) {
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
-        if( spec.shouldExplore(obj2) ){
-            if( spec.EXPLORATION_BLACKLIST.includes(key) ){ continue; }
+        if( inspector.shouldExplore(obj2) ){
+            if( inspector.EXPLORATION_BLACKLIST.includes(key) ){ continue; }
             try{ 
-                spec.detour(obj2, path + "." + key, depth + 1); 
+                inspector.detour(obj2, path + "." + key, depth + 1); 
             } 
             catch (e){ }
         }
         else if( 
-            ( spec.DETOUR_CONSTRUCTORS || !spec.isConstructor(key) ) &&   
             (obj2!==null) && (obj2!=undefined) && 
             (typeof obj2 === 'function') && 
-            (!obj2.__IsWrapped) &&
-            ( spec.DETOUR_NATIVE_FUNCS || spec.isCustom(obj2) ) 
+            (!obj2._wrapped) &&
+            ( inspector.DETOUR_NATIVE_FUNCS || inspector.isCustom(obj2) ) 
         ){
-            if( spec.FUNCTION_BLACKLIST.includes(key) ){ continue; }
+            if( inspector.FUNCTION_BLACKLIST.includes(key) ){ continue; }
             // janky hack mate, thanks
             // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
-            spec.log = spec.log + ( (obj2+"").split(")")[0] + "){...} @ "+ path+"."+key + "\n" );
-            spec.logcount++;
+            inspector.log[inspector.log.length] = inspector.justify( (obj2+"").split(")")[0] + "){...} ", 32) + " >\t\t"+ path+"."+key;
             obj[key] = (function() {
-                var cached_function = obj2;
-                cached_function.override = cached_function;
-                cached_function.__IsWrapped = true;
-                cached_function.__Location  = path+"."+key;
-                cached_function.__Path = path+".";
-                var new_function = {[cached_function.name]: function() { // new wrapped function
-                    if( spec.loggable ){
-                        spec.loggable = !spec.doAntispam;
+                let data = {};
+                data._function = obj2;
+                data._location = path+"."+key;
+                var new_function = {[obj2.name]: function() { // new wrapped function
+                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.LOG_BURST_LIMIT <= 0 || inspector.logs < inspector.LOG_BURST_LIMIT) ){
+                        inspector.logs++;
                         try{
-                            console.groupCollapsed(cached_function.__Path + spec.or(cached_function.name,"<anonymous>") + "(" + spec.join([...arguments]) + ");");
-                            console.log(new spec.construct([...arguments]));
-                            console.log(cached_function.override);
-                            console.log("Stack Trace:\n" + spec.trace());
-                            console.log("Location:\n" + cached_function.__Location);
-                            console.log("To Unhook:\n" + cached_function.__Location + " = " + cached_function.__Location + ".old;");
+                            console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
+                            console.log(new inspector.construct([...arguments]));
+                            console.log(data.override);
+                            console.log("Name: "+data)
+                            console.log("Stack Trace:\n" + inspector.trace());
+                            console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
                         }
                         finally{
                             console.groupEnd();
                         }
                     }
-                    var result = cached_function.override.apply(this, arguments); // use .apply() to call it
+                    var result = data._function.apply(this, arguments); // use .apply() to call it
                     if(result != undefined){
                         return result;
                     }
-                }}[cached_function.name];
-                new_function.name
-                new_function.__IsWrapped = true;
-                new_function.old  = cached_function;
+                }}[data._function.name];
+                // fixes weird functions that have their own data fields
+                for (const key in obj2) {
+                    if (Object.hasOwnProperty.call(obj2, key)) {
+                        new_function[key] = obj2[key];
+                    }
+                }
+                new_function._wrapped = true;
+                new_function._code    = data._function;
+                new_function._old     = obj2;
                 return new_function;
             })();
+            if(inspector.log.length > 64){
+                console.log(inspector.log.join("\n"));
+                inspector.log = [];
+            }
         }
     }
-    if(depth==0){
-        console.groupCollapsed("Detoured "+spec.logcount+" functions.")
-            console.log(spec.log);
-        console.groupEnd();
-        spec.log = "";
-        spec.logcount = 0;
+    if(depth == 0){
+        console.log(inspector.log.join("\n"));
+        inspector.log = [];    
+        console.groupEnd();   
     }
 }
-spec.detour(window, "window", 0);
+inspector.detour(window, "window", 0);
