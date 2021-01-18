@@ -7,21 +7,22 @@ var inspector = { traversed: {}, log: [], logs: 0 };
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  T O T A L   O M N I P R E S E N C E!
  *  You can also detour subsets of the website by calling inspector.detour(window.subset);
- *  The antispam parameters are used to make sure chrome console isn't overwhelmed.
  * 
- *  FOR ALL DETOURED FUNCTIONS:
- *    .code is what will be run instead of the original function.  This will be a call-logging detour by default.
- *    .old will be the original non-detoured function.  Use this to revert function detours.
+ *  The antispam parameters are used to make sure chrome console isn't overwhelmed:
+ *    inspector.burstTime    > how long each 'burst' lasts in ms
+ *    inspector.burstLimit   > the max messages to log per burst
+ * 
+ *  All detoured functions will have these fields:
+ *    .code  >  is what will be run instead of the original function.  This will be a call-logging detour by default.
+ *    .old   >  will be the original non-detoured function.  Use this to revert function detours.
 */
-inspector.EXPLORATION_BLACKLIST = ["inspector"];
-inspector.FUNCTION_BLACKLIST    = ["log"];
-inspector.MAX_SEARCH_DEPTH      = 6;
-inspector.DETOUR_NATIVE_FUNCS   = false;
 
-// these help with log antispam so that chrome doesn't insta-die
-// set burst limit to 0 to disable
-inspector.BURST_LIMIT  = 64;  // max per burst reset
-inspector.BURST_RESET  = 100; // in ms
+inspector.BANNED_KEYS           = ["inspector"]; // searching for functions will stop at these keys
+inspector.BANNED_FUNCTIONS      = ["log"];       // functions under these keys will be left alone
+inspector.MAX_SEARCH_DEPTH      = 6;             // max recursive depth to look for functions
+inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
+inspector.burstLimit            = 64;
+inspector.burstTime             = 100;
 
 // helper functions
 inspector.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
@@ -31,22 +32,22 @@ inspector.trace = function(){ let trace = (new Error().stack).replaceAll("   ","
 inspector.construct = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
 inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
-inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.BURST_RESET ); }
+inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.burstTime ); }
 inspector.resetAntiSpam();
 
 inspector.detour = function (obj, path, depth) { 
+    if( inspector.traversed[path] ){ return; }
+    if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     if( depth == undefined ){ depth = 0 };
     if( depth == 0 ){
         console.groupCollapsed("Detoured Function List");
     }
-    if( inspector.traversed[path] ){ return; }
-    if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     inspector.traversed[path] = true;
     for (const key in obj) {
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
         if( inspector.shouldExplore(obj2) ){
-            if( inspector.EXPLORATION_BLACKLIST.includes(key) ){ continue; }
+            if( inspector.BANNED_KEYS.includes(key) ){ continue; }
             try{ 
                 inspector.detour(obj2, path + "." + key, depth + 1); 
             } 
@@ -58,7 +59,7 @@ inspector.detour = function (obj, path, depth) {
             (!obj2._wrapped) &&
             ( inspector.DETOUR_NATIVE_FUNCS || inspector.isCustom(obj2) ) 
         ){
-            if( inspector.FUNCTION_BLACKLIST.includes(key) ){ continue; }
+            if( inspector.BANNED_FUNCTIONS.includes(key) ){ continue; }
             // janky hack mate, thanks
             // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
             inspector.log[inspector.log.length] = inspector.justify( (obj2+"").split(")")[0] + "){...} ", 32) + " >\t\t"+ path+"."+key;
@@ -67,7 +68,7 @@ inspector.detour = function (obj, path, depth) {
                 data._function = obj2;
                 data._location = path+"."+key;
                 var new_function = {[obj2.name]: function() { // new wrapped function
-                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.BURST_LIMIT <= 0 || inspector.logs < inspector.BURST_LIMIT) ){
+                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
                         inspector.logs++;
                         try{
                             console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");

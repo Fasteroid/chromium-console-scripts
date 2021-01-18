@@ -1,21 +1,19 @@
-/**********************************
-*  Fast's Funny JS Global Dumper: *
-*     Chrome Console Edition      *
-**********************************/
-var HAX = [];
+/************************************
+* Fast's JS Global Variable Dumper: *
+*      Chrome Console Edition       *
+************************************/
+var dumper = { traversed: { } };
 
-/*  HOW 2 USE:
- *  hit f12 and paste it in chrome consloe then hit enter 2 hack XDDDDDDD
- *  advenced settings 4 pro haxxorz are below dont touch them unless ur a pro haxxor
+/*  HOW TO USE:
+    Paste in chrome console and hit enter.  Take care if you set the max search depth really high.
 */
-HAX.EXPLORATION_BLACKLIST = ["HAX","traversalMarker","$","jQuery","Ajax","jQuery2240242725290525418251","tourController"]; 
-HAX.MAX_SEARCH_DEPTH      = 10;
-HAX.IGNORE_NULL           = true;
-HAX.IGNORE_FUNC           = false;
-HAX.NEWLINE_AT            = 96;
-HAX.SEPARATOR             = "\n";
+dumper.BANNED_KEYS      = ["dumper"]; // traversal will stop at these keys
+dumper.MAX_SEARCH_DEPTH = 10;         // max recursive depth to search
+dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
+dumper.IGNORE_FUNC      = false;      // if true, don't print functions
+dumper.SEPARATOR        = "\n";
 
-HAX.shouldExplore = function(val) {
+dumper.shouldExplore = function(val) {
     try { 
         if (val === undefined || val === null) { return false }
         if (val + "" == "[object Window]") { return false; }
@@ -25,68 +23,73 @@ HAX.shouldExplore = function(val) {
         return false;
     }
 }
-
-HAX.format = function(path,value){
-    if( value.length > HAX.NEWLINE_AT*0.7 || value.search("\n") != -1 ){
-        path = path + " = \n" + value + "\n" + HAX.SEPARATOR
-        if( !HAX.lastseparated ){
-            HAX.lastseparated = true;
-            path = HAX.SEPARATOR + path;
+dumper.lastseparated = false;
+dumper.format = function(path,value){
+    if( value.length > 64 || value.search("\n") != -1 ){
+        path = path + " = \n" + value + "\n" + dumper.SEPARATOR
+        if( !dumper.lastseparated ){
+            dumper.lastseparated = true;
+            path = dumper.SEPARATOR + path;
         }
         return path;
     }
-    else if( path.length > HAX.NEWLINE_AT ){
-        return path + "\t".repeat(Math.max(0,Math.ceil((HAX.NEWLINE_AT-path.length)/4))) + "= \n" + value + "\n"
+    else if( path.length > 90 ){
+        return path + "\t".repeat(Math.max(0,Math.ceil((96-path.length)/4))) + "= \n" + value + "\n"
     }
-    HAX.lastseparated = false;
-    return path + "\t".repeat(Math.max(0,Math.ceil((HAX.NEWLINE_AT-path.length)/4))) + "= " + value + "\n"
+    dumper.lastseparated = false;
+    return path + "\t".repeat(Math.max(0,Math.ceil((96-path.length)/4))) + "= " + value + "\n"
 }
 
-HAX.log = "";
-HAX.seed = Math.random(Date.parse());
-console.log("seed: "+HAX.seed);
-HAX.lastseparated = false
+dumper.log = "";
+dumper.seed = Math.random(Date.parse());
+console.log("seed: "+dumper.seed);
 
-HAX.recursivelyExplore = function (obj, path, depth) {    
-
-    obj.traversalMarker = HAX.seed;
+dumper.recursivelyExplore = function (obj, path, depth) {    
+    if( dumper.traversed[path] ){ return; }
+    if( depth > dumper.MAX_SEARCH_DEPTH ) { return; }
+    if( depth == 0 ){
+        console.group("Global Key/Value Pairs:");
+    }
+    dumper.traversed[path] = dumper.seed;
     for (const key in obj) {
 
-        if( HAX.EXPLORATION_BLACKLIST.includes(key) ){ continue; }
+        if( dumper.BANNED_KEYS.includes(key) ){ continue; }
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
 
-        if( HAX.shouldExplore(obj2) ){
-            if (depth < HAX.MAX_SEARCH_DEPTH) {
-                try{ 
-                    HAX.recursivelyExplore(obj2, path + "." + key, depth + 1); 
-                } 
-                catch (e){
-                    HAX.log = HAX.log + HAX.format(path, "[Unexplorable]");
-                }
+        if( dumper.shouldExplore(obj2) ){
+            try{ 
+                dumper.recursivelyExplore(obj2, path + "." + key, depth + 1); 
+            } 
+            catch (e){
+                dumper.log = dumper.log + dumper.format(path, "[Exploration Failed]");
             }
         }
 
-        else if( ( !HAX.IGNORE_NULL || obj2!==null ) && ( !HAX.IGNORE_FUNC || typeof obj2 !== 'function' ) ){
+        else if( ( !dumper.IGNORE_NULL || obj2!==null ) && ( !dumper.IGNORE_FUNC || typeof obj2 !== 'function' ) ){
             try {
                 var finalPath = path + "." + key
-                if ( HAX.log.length > 134217728 ) {
-                    console.log(HAX.log);
-                    HAX.log = "";
+                if ( dumper.log.length > 134217728 ) {
+                    console.log(dumper.log);
+                    dumper.log = "";
                 }
                 if( typeof obj2 === 'symbol' ){
-                    HAX.log = HAX.log + HAX.format(finalPath, "[Symbol] " + obj2.valueOf());
+                    dumper.log = dumper.log + dumper.format(finalPath, "[Symbol] " + obj2.valueOf());
                 }
                 else {
-                    HAX.log = HAX.log + HAX.format(finalPath, obj2+"");
+                    dumper.log = dumper.log + dumper.format(finalPath, obj2+"");
                 }
             }
             catch (e) {
-                HAX.log = HAX.log + HAX.format(finalPath,"[Unprintable " + (typeof obj2) + "]");
+                dumper.log = dumper.log + dumper.format(finalPath,"[Unprintable " + (typeof obj2) + "]");
             }
         }
 
     }
+    if( depth == 0 ){
+        console.log(dumper.log);
+        console.groupEnd();
+        dumper.log = "";
+    }
 }
-HAX.recursivelyExplore(window, "window", 0);
-console.log(HAX.log);
+dumper.recursivelyExplore(window, "window", 0);
