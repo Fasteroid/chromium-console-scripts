@@ -2,7 +2,7 @@
 *  Fast's JS Function Call Inspector: *
 *       Chrome Console Edition        *
 **************************************/
-var inspector = { traversed: {}, log: [], logs: 0 };
+var inspector = { traversed: {}, log: [], logs: 0, path: 0 };
 
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  T O T A L   O M N I P R E S E N C E!
@@ -22,20 +22,21 @@ inspector.BANNED_FUNCTIONS      = ["log"];       // functions under these keys w
 inspector.MAX_SEARCH_DEPTH      = 6;             // max recursive depth to look for functions
 inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
 inspector.burstLimit            = 64;
-inspector.burstTime             = 100;
+inspector.burstTime             = 0;
 
 // helper functions
 inspector.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
 inspector.join = function(array){ var output = []; for (let index = 0; index < array.length; index++) { if( array[index] != null ){ if( typeof array[index] === 'string' ){ output[index] = "'" + array[index] + "'"; } else{ output[index] = array[index]; } } else{ output[index] = "null"} } return output.join(", "); } // display null properly
 inspector.isCustom = function(f){ return !(/\{\s*\[native code\]\s*\}/).test(f); } // does it have native code?
 inspector.trace = function(){ let trace = (new Error().stack).replaceAll("   ","  ").split("at ").splice(2); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index) + trace[index]; } return output.join(""); } // get fancy stack trace
-inspector.construct = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
+inspector.argobject = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
+inspector.returnobj = function Returned( obj ) { this.result = obj } // names the object "Arguments" in console
 inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
-
 inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.burstTime ); }
 inspector.resetAntiSpam();
 
 inspector.detour = function (obj, path, depth) { 
+    if( path == undefined ){ inspector.path++; path="<"+inspector.path+">"; }
     if( inspector.traversed[path] ){ return; }
     if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     if( depth == undefined ){ depth = 0 };
@@ -67,26 +68,34 @@ inspector.detour = function (obj, path, depth) {
                 let data = {};
                 data._function = obj2;
                 data._location = path+"."+key;
-                var new_function = {[obj2.name]: function() { // new wrapped function
+                data._parent   = obj;
+                data._key      = key;
+                var new_function = {[obj2.name+" (detoured)"]: function() { /* INSPECTOR-WRAPPED FUNCTION */
                     if( arguments[1]!=inspector.resetAntiSpam && (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
                         inspector.logs++;
+                        var result;
                         try{
+                            result = data._function.apply(this, arguments); // use .apply() to call it
                             console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
-                            console.log(new inspector.construct([...arguments]));
-                            console.log(data._function);
-                            console.log("Name: "+data)
+                            console.log(new inspector.argobject([...arguments]));
+                            console.log(new inspector.returnobj(result));
+                            if(obj2.name){
+                                console.log("Name: "+obj2.name);
+                            }
                             console.log("Stack Trace:\n" + inspector.trace());
                             console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
+                            console.log(data._function);
+                        }
+                        catch(e){
+                            console.warn("WARNING: Detoured function '" + data._location + "' threw an exception.  You should probably put it in the function blacklist and refresh.");
+                            data._parent[data._key] = data._function;
                         }
                         finally{
                             console.groupEnd();
                         }
-                    }
-                    var result = data._function.apply(this, arguments); // use .apply() to call it
-                    if(result != undefined){
                         return result;
                     }
-                }}[data._function.name];
+                }}[data._function.name+" (detoured)"];
                 // fixes weird functions that have their own data fields
                 for (const key in obj2) {
                     if (Object.hasOwnProperty.call(obj2, key)) {
@@ -94,8 +103,8 @@ inspector.detour = function (obj, path, depth) {
                     }
                 }
                 new_function._wrapped = true;
-                new_function.code     = data._function;
-                new_function.old      = obj2;
+                new_function._code     = data._function;
+                new_function._old      = obj2;
                 return new_function;
             })();
             if(inspector.log.length > 64){
@@ -110,4 +119,4 @@ inspector.detour = function (obj, path, depth) {
         console.groupEnd();   
     }
 }
-inspector.detour(window, "window", 0);
+inspector.detour(window, "window");
