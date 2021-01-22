@@ -37,13 +37,13 @@ inspector.resetAntiSpam();
 
 inspector.detour = function (obj, path, depth) { 
     if( path == undefined ){ inspector.path++; path="<"+inspector.path+">"; }
-    if( inspector.traversed[path] ){ return; }
+    if( inspector.traversed[obj] ){ return; }
     if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     if( depth == undefined ){ depth = 0 };
     if( depth == 0 ){
         console.groupCollapsed("Detoured Function List");
     }
-    inspector.traversed[path] = true;
+    inspector.traversed[obj] = true;
     for (const key in obj) {
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
