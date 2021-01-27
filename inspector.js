@@ -34,16 +34,17 @@ inspector.returnobj = function Returned( obj ) { this.result = obj } // names th
 inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.burstTime ); }
 inspector.resetAntiSpam();
+inspector.seed = Math.random();
 
 inspector.detour = function (obj, path, depth) { 
     if( path == undefined ){ inspector.path++; path="<"+inspector.path+">"; }
-    if( inspector.traversed[obj] ){ return; }
     if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     if( depth == undefined ){ depth = 0 };
     if( depth == 0 ){
         console.groupCollapsed("Detoured Function List");
     }
-    inspector.traversed[obj] = true;
+    if( obj.__explored == inspector.seed ) { return; }
+    obj.__explored = inspector.seed;
     for (const key in obj) {
         if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
