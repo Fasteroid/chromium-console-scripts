@@ -22,7 +22,7 @@ inspector.BANNED_FUNCTIONS      = ["log"];       // functions under these keys w
 inspector.MAX_SEARCH_DEPTH      = 6;             // max recursive depth to look for functions
 inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
 inspector.burstLimit            = 64;
-inspector.burstTime             = 0;
+inspector.burstTime             = 100; // in ms
 
 // helper functions
 inspector.shouldExplore = function(val) { try {  if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
@@ -72,11 +72,12 @@ inspector.detour = function (obj, path, depth) {
                 data._parent   = obj;
                 data._key      = key;
                 var new_function = {[obj2.name+" (detoured)"]: function() { /* INSPECTOR-WRAPPED FUNCTION */
-                    if( arguments[1]!=inspector.resetAntiSpam && (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
+                    if( (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
                         inspector.logs++;
                         var result;
                         try{
                             result = data._function.apply(this, arguments); // use .apply() to call it
+                            if( arguments[0] == inspector.resetAntiSpam ){ return result; }
                             console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
                             console.log(new inspector.argobject([...arguments]));
                             console.log(new inspector.returnobj(result));
@@ -104,8 +105,8 @@ inspector.detour = function (obj, path, depth) {
                     }
                 }
                 new_function._wrapped = true;
-                new_function._code     = data._function;
-                new_function._old      = obj2;
+                new_function.code     = data._function;
+                new_function.old      = obj2;
                 return new_function;
             })();
             if(inspector.log.length > 64){
