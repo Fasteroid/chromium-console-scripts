@@ -2,7 +2,7 @@
 *  Fast's JS Function Call Inspector: *
 *       Chrome Console Edition        *
 **************************************/
-var inspector = { traversed: {}, log: [], logs: 0, path: 0 };
+var inspector = { traversed: {}, log: [], logs: 0, path: 0, firstDetour: true };
 
 /*  HOW TO USE:
  *  Paste into chrome console and smash enter to gain  T O T A L   O M N I P R E S E N C E!
@@ -21,6 +21,7 @@ inspector.BANNED_KEYS           = ["inspector"]; // searching for functions will
 inspector.BANNED_FUNCTIONS      = ["log"];       // functions under these keys will be left alone
 inspector.MAX_SEARCH_DEPTH      = 6;             // max recursive depth to look for functions
 inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
+inspector.AGRESSIVE_DETOURING   = true;          // look for functions in calls and returns of detoured functions and detour those too!
 inspector.burstLimit            = 64;
 inspector.burstTime             = 100; // in ms
 
@@ -37,87 +38,92 @@ inspector.resetAntiSpam();
 inspector.seed = Math.random();
 
 inspector.detour = function (obj, path, depth) { 
-    if( path == undefined ){ inspector.path++; path="<"+inspector.path+">"; }
     if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
     if( depth == undefined ){ depth = 0 };
-    if( depth == 0 ){
-        console.groupCollapsed("Detoured Function List");
-    }
-    if( obj.__explored == inspector.seed ) { return; }
-    obj.__explored = inspector.seed;
-    for (const key in obj) {
-        if( !obj.hasOwnProperty(key) ) { continue; }
-        var obj2 = obj[key];
-        if( inspector.shouldExplore(obj2) ){
-            if( inspector.BANNED_KEYS.includes(key) ){ continue; }
-            try{ 
+    if( depth == 0 ){ inspector.firstDetour = true; }
+    if( obj._inspector_breadcrumb == inspector.seed ) { return; }
+    obj._inspector_breadcrumb = inspector.seed;
+    try{
+        for (const key in obj) {
+            if( !obj.hasOwnProperty(key) ) { continue; }
+            var obj2 = obj[key];
+            if( inspector.shouldExplore(obj2) ){
+                if( inspector.BANNED_KEYS.includes(key) ){ continue; }
                 inspector.detour(obj2, path + "." + key, depth + 1); 
-            } 
-            catch (e){ }
-        }
-        else if( 
-            (obj2!==null) && (obj2!=undefined) && 
-            (typeof obj2 === 'function') && 
-            (!obj2._wrapped) &&
-            ( inspector.DETOUR_NATIVE_FUNCS || inspector.isCustom(obj2) ) 
-        ){
-            if( inspector.BANNED_FUNCTIONS.includes(key) ){ continue; }
-            // janky hack mate, thanks
-            // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
-            inspector.log[inspector.log.length] = inspector.justify( (obj2+"").split(")")[0] + "){...} ", 32) + " >\t\t"+ path+"."+key;
-            obj[key] = (function() {
-                let data = {};
-                data._function = obj2;
-                data._location = path+"."+key;
-                data._parent   = obj;
-                data._key      = key;
-                var new_function = {[obj2.name+" (detoured)"]: function() { /* INSPECTOR-WRAPPED FUNCTION */
-                    let result = data._function.apply(this, arguments); // use .apply() to call the original function
-                    if( arguments[0] == inspector.resetAntiSpam ){ return result; } // skip if this is setTimeout antispam
-                    if( (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
-                        inspector.logs++;
-                        try{
-                            console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
-                            console.log(new inspector.argobject([...arguments]));
-                            console.log(new inspector.returnobj(result));
-                            if(obj2.name){
-                                console.log("Name: "+obj2.name);
+            }
+            else if( 
+                (obj2!==null) && (obj2!=undefined) && 
+                (typeof obj2 === 'function') && 
+                (!obj2._wrapped) &&
+                ( inspector.DETOUR_NATIVE_FUNCS || inspector.isCustom(obj2) ) 
+            ){
+                if( inspector.BANNED_FUNCTIONS.includes(key) ){ continue; }
+                // janky hack mate, thanks
+                // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
+                if( inspector.firstDetour ){ console.groupCollapsed("Detoured Function List"); inspector.firstDetour = false; }
+                inspector.log[inspector.log.length] = inspector.justify( (obj2+"").split(")")[0] + "){...} ", 32) + " >\t\t"+ path+"."+key;
+                obj[key] = (function() {
+                    let data = {};
+                    data._function = obj2;
+                    data._location = path+"."+key;
+                    data._parent   = obj;
+                    data._key      = key;
+                    var new_function = {[obj2.name+" (detoured)"]: function() { /* INSPECTOR-WRAPPED FUNCTION */
+                        let result = data._function.apply(this, arguments); // use .apply() to call the original function
+                        if( arguments[0] == inspector.resetAntiSpam ){ return result; } // skip if this is setTimeout antispam
+                        if( (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
+                            inspector.logs++;
+                            try{
+                                console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
+                                console.log(new inspector.argobject([...arguments]));
+                                console.log(new inspector.returnobj(result));
+                                if(obj2.name){
+                                    console.log("Name: "+obj2.name);
+                                }
+                                console.log("Stack Trace:\n" + inspector.trace());
+                                console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
+                                console.log(data._function);
+                                if(inspector.AGRESSIVE_DETOURING){
+                                    inspector.detour(arguments,data._location+"( <= ",0);
+                                    if( inspector.shouldExplore(result) ){
+                                        inspector.detour(result, data._location+"().",0); 
+                                    }
+                                }
                             }
-                            console.log("Stack Trace:\n" + inspector.trace());
-                            console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
-                            console.log(data._function);
+                            catch(e){
+                                console.warn("WARNING: Detoured function '" + data._location + "' threw an exception while logging.  You should probably put it in the function blacklist and refresh.");
+                                data._parent[data._key] = data._function;
+                            }
+                            finally{
+                                console.groupEnd();
+                            }
+                            return result;
                         }
-                        catch(e){
-                            console.warn("WARNING: Detoured function '" + data._location + "' threw an exception while logging.  You should probably put it in the function blacklist and refresh.");
-                            data._parent[data._key] = data._function;
+                    }}[data._function.name+" (detoured)"];
+                    // fixes weird functions that have their own data fields
+                    for (const key in obj2) {
+                        if (Object.hasOwnProperty.call(obj2, key)) {
+                            new_function[key] = obj2[key];
                         }
-                        finally{
-                            console.groupEnd();
-                        }
-                        return result;
                     }
-                }}[data._function.name+" (detoured)"];
-                // fixes weird functions that have their own data fields
-                for (const key in obj2) {
-                    if (Object.hasOwnProperty.call(obj2, key)) {
-                        new_function[key] = obj2[key];
-                    }
+                    new_function._wrapped = true;
+                    new_function.code     = data._function;
+                    new_function.old      = obj2;
+                    return new_function;
+                })();
+                if(inspector.log.length > 64){
+                    console.log(inspector.log.join("\n"));
+                    inspector.log = [];
                 }
-                new_function._wrapped = true;
-                new_function.code     = data._function;
-                new_function.old      = obj2;
-                return new_function;
-            })();
-            if(inspector.log.length > 64){
-                console.log(inspector.log.join("\n"));
-                inspector.log = [];
             }
         }
     }
-    if(depth == 0){
-        console.log(inspector.log.join("\n"));
-        inspector.log = [];    
-        console.groupEnd();   
+    finally{
+        if(depth == 0){
+            console.log(inspector.log.join("\n"));
+            inspector.log = [];    
+            console.groupEnd();   
+        }
     }
 }
 inspector.detour(window, "window");
