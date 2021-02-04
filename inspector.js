@@ -72,12 +72,11 @@ inspector.detour = function (obj, path, depth) {
                 data._parent   = obj;
                 data._key      = key;
                 var new_function = {[obj2.name+" (detoured)"]: function() { /* INSPECTOR-WRAPPED FUNCTION */
+                    let result = data._function.apply(this, arguments); // use .apply() to call the original function
+                    if( arguments[0] == inspector.resetAntiSpam ){ return result; } // skip if this is setTimeout antispam
                     if( (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
                         inspector.logs++;
-                        var result;
                         try{
-                            result = data._function.apply(this, arguments); // use .apply() to call it
-                            if( arguments[0] == inspector.resetAntiSpam ){ return result; }
                             console.groupCollapsed(data._location + "(" + inspector.join([...arguments]) + ");");
                             console.log(new inspector.argobject([...arguments]));
                             console.log(new inspector.returnobj(result));
@@ -89,7 +88,7 @@ inspector.detour = function (obj, path, depth) {
                             console.log(data._function);
                         }
                         catch(e){
-                            console.warn("WARNING: Detoured function '" + data._location + "' threw an exception.  You should probably put it in the function blacklist and refresh.");
+                            console.warn("WARNING: Detoured function '" + data._location + "' threw an exception while logging.  You should probably put it in the function blacklist and refresh.");
                             data._parent[data._key] = data._function;
                         }
                         finally{
