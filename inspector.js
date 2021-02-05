@@ -84,9 +84,9 @@ inspector.detour = function (obj, path, depth) {
                                 console.log("To Unhook:\n" + data._location + " = " + data._location + ".old;");
                                 console.log(data._function);
                                 if(inspector.AGRESSIVE_DETOURING){
-                                    inspector.detour(arguments,data._location+"( <= ",0);
+                                    inspector.detour(arguments,data._location+".<arguments>",0);
                                     if( inspector.shouldExplore(result) ){
-                                        inspector.detour(result, data._location+"().",0); 
+                                        inspector.detour({1: result}, data._location+"().",0); 
                                     }
                                 }
                             }
@@ -119,7 +119,7 @@ inspector.detour = function (obj, path, depth) {
         }
     }
     finally{
-        if(depth == 0){
+        if(depth == 0 & !inspector.firstDetour ){
             console.log(inspector.log.join("\n"));
             inspector.log = [];    
             console.groupEnd();   
