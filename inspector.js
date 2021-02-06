@@ -24,7 +24,7 @@ inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
 inspector.burstLimit            = 64;            // max messages per burstTime
 inspector.burstTime             = 100;           // in ms
 
-inspector.DETOUR_ALL_INSTANTLY  = false;         // run the function detourer immediately on the entire DOM?
+inspector.DETOUR_ALL_INSTANTLY  = true;         // run the function detourer immediately on the entire DOM?
 
 // helper functions don't touch
 inspector.shouldExplore = function(val) { try { if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
