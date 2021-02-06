@@ -54,7 +54,6 @@ dumper.recursivelyExplore = function (obj, path, depth) {
     for (const key in obj) {
 
         if( dumper.BANNED_KEYS.includes(key) ){ continue; }
-        if( !obj.hasOwnProperty(key) ) { continue; }
         var obj2 = obj[key];
 
         if( dumper.shouldExplore(obj2) ){
