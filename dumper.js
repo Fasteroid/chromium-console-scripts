@@ -12,16 +12,20 @@ dumper.BANNED_KEYS      = ["dumper","document"]; // traversal will stop at these
 dumper.MAX_SEARCH_DEPTH = 10;         // max recursive depth to search
 dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
 
+dumper.group = console.group          // change this to groupCollapsed if you're crashing
+
 dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
     string: "#999999",
     number: "#ff6666",
     bigint: "",
     boolean: "#668cff",
     symbol: "#80ff80",
-    object: "#ffff66",
+    object: "#fbfb51",
     undefined: "",
     function: "#fc83fc"
 }
+
+
 
 dumper.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
@@ -43,7 +47,7 @@ dumper.advLog = function(value,location){
     }
 }
 
-dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {    
+dumper.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) {    
 
     if( depth > dumper.MAX_SEARCH_DEPTH ){ return; }
 
@@ -51,12 +55,14 @@ dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
     if(refs.has(obj)){ dumper.advLog(obj,dumper.justify(location,32)); return; }
     else if( obj!=null ){ refs.add(obj); }
 
-    let group = true;
+    let group = depth > 0;
     for (const key in obj) {
         
-        if( group ){ group = false; console.group(key); }
         let value = obj[key];
+        if( value == window ){ continue; }
+        if( key == "dumper" ){ continue; }
         let location = `${path}['${key}']`;
+        if( group ){ group = false; dumper.group(relpath); }
 
         if( typeof(value) === 'object' ){
             if( dumper.BANNED_KEYS.includes(key) ){ 
@@ -64,7 +70,7 @@ dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
             }
             else{
                 try{
-                    dumper.recurse(value, location, depth+1, refs);  
+                    dumper.recurse(value, location, depth+1, key, refs);  
                 }
                 finally{ }
             }
@@ -81,4 +87,4 @@ dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
         dumper.advLog(obj,dumper.justify(path,32))
     }
 }
-dumper.recurse(window, "window", 0);
+dumper.recurse(window, "window");
