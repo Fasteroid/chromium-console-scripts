@@ -1,4 +1,4 @@
-This is a small collection of JS scripts for chrome console that might be useful for reverse-engineering or debugging.  Please don't use them to take advantage of poorly written websites.
+This is a small collection of JS scripts for chrome console that might be useful for reverse-engineering or debugging.
 
 ## JS Global Dumper
 Paste in chrome console and run to recursively print all discovered values and their types to console.  Can be memory intensive and may crash chrome console on larger websites when using high recursion depth.  Object paths can be blacklisted if necessary.
