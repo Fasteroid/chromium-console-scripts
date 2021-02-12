@@ -26,11 +26,18 @@ dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
 }
 
 
-
 dumper.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
+dumper.isBannedKey = function(key){
+    if( key == "dumper" ){ return true; }
+    if( dumper.BANNED_KEYS.includes(key) ){ 
+        return true;
+    }
+    return false;
+}
+
 // call this on any value and leave location blank to print advanced data about it
-dumper.advLog = function(value,location){
+dumper.advLog = function(value,path){
     if( value==null || !dumper.IGNORE_NULL ){ return } // nothing to see here...
     let type = typeof(value);
     try{
@@ -39,8 +46,8 @@ dumper.advLog = function(value,location){
         value+"";
     }
     catch(e){ value = "" }
-    if(location){
-        console.log( `${location} = %c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
+    if(path){
+        console.log( `${path} = %c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
     }
     else{
         console.log( `%c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
@@ -52,7 +59,7 @@ dumper.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) 
     if( depth > dumper.MAX_SEARCH_DEPTH ){ return; }
 
     // Avoid infinite recursion
-    if(refs.has(obj)){ dumper.advLog(obj,dumper.justify(location,32)); return; }
+    if(refs.has(obj)){ dumper.advLog(obj,dumper.justify(path,32)); return; }
     else if( obj!=null ){ refs.add(obj); }
 
     let group = depth > 0;
@@ -60,23 +67,23 @@ dumper.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) 
         
         let value = obj[key];
         if( value == window ){ continue; }
-        if( key == "dumper" ){ continue; }
-        let location = `${path}['${key}']`;
+        let type = typeof(value)
+        let newpath = `${path}['${key}']`;
         if( group ){ group = false; dumper.group(relpath); }
 
-        if( typeof(value) === 'object' ){
-            if( dumper.BANNED_KEYS.includes(key) ){ 
-                dumper.advLog(value,dumper.justify(location,32))
-            }
-            else{
+        switch(type){
+            case 'function':
+                dumper.advLog(value,dumper.justify(newpath,32));
+            case 'object':
+                if( dumper.isBannedKey(key) ){ continue; }
                 try{
-                    dumper.recurse(value, location, depth+1, key, refs);  
+                    dumper.recurse(value, newpath, depth+1, key, refs);  
                 }
                 finally{ }
-            }
-        }
-        else{
-            dumper.advLog(value,dumper.justify(location,32))
+            break;
+            default:
+                dumper.advLog(value,dumper.justify(newpath,32));
+            break;
         }
 
     }
