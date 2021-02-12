@@ -1,81 +1,84 @@
 /************************************
-* Fast's JS Global Variable Dumper: *
+* Fast's JS Global Variable Dumper  *
 *      Chrome Console Edition       *
 ************************************/
-var dumper = { log: [] };
+// version 2
+var dumper = { };
 
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Take care if you set the max search depth really high.
 */
-dumper.BANNED_KEYS      = ["dumper"]; // traversal will stop at these keys
+dumper.BANNED_KEYS      = ["dumper","document"]; // traversal will stop at these keys
 dumper.MAX_SEARCH_DEPTH = 10;         // max recursive depth to search
 dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
-dumper.IGNORE_FUNC      = false;      // if true, don't print functions
-dumper.SEPARATOR        = "\n";
-dumper.GROUP_SIZE       = 134217728;
-dumper.EXPLORE_EVERYTHING = false;    // if true, explore inherited properties
 
-dumper.shouldExplore = function(val) {
-    try { 
-        if (val === undefined || val === null) { return false }
-        if (val + "" == "[object Window]") { return false; }
-        return typeof val === 'object';
-    }
-    catch (e) {
-        return false;
-    }
+dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
+    string: "#999999",
+    number: "#ff6666",
+    bigint: "",
+    boolean: "#668cff",
+    symbol: "#80ff80",
+    object: "#ffff66",
+    undefined: "",
+    function: "#fc83fc"
 }
-dumper.lastseparated = false;
+
 dumper.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
 
-dumper.seed = Math.random(Date.parse());
-console.log("seed: "+dumper.seed);
-
-dumper.recursivelyExplore = function (obj, path, depth) {    
-    if( obj.traversed == dumper.seed ){ return; }
-    if( depth > dumper.MAX_SEARCH_DEPTH ) { return; }
-    if( depth == 0 ){
-        console.group("Global Key/Value Pairs:");
+// call this on any value and leave location blank to print advanced data about it
+dumper.advLog = function(value,location){
+    if( value==null || !dumper.IGNORE_NULL ){ return } // nothing to see here...
+    let type = typeof(value);
+    try{
+        if( type == 'symbol' ){ value = value.valueOf() } // ugh
+        else if( type == 'string' ){ value = `"${value}"`}
+        value+"";
     }
-    obj.traversed = dumper.seed;
-    for (const key in obj) {
-
-        if( !dumper.EXPLORE_EVERYTHING && !obj.hasOwnProperty(key) ) { continue; }
-        if( key=="traversed" || dumper.BANNED_KEYS.includes(key) ){ continue; }
-        var obj2 = obj[key];
-
-        if( dumper.shouldExplore(obj2) ){
-            try{ 
-                dumper.recursivelyExplore(obj2, path + "." + key, depth + 1); 
-            } 
-            catch (e){
-                dumper.log[dumper.log.length] = dumper.justify(path, 64) + "~ [Exploration Failed]\n";
-            }
-        }
-        else if( ( !dumper.IGNORE_NULL || obj2!==null ) && ( !dumper.IGNORE_FUNC || typeof obj2 !== 'function' ) ){
-            try {
-                var finalPath = path + "." + key
-                if ( dumper.log.length > dumper.GROUP_SIZE ) {
-                    console.log(dumper.log.join("\n"));
-                    dumper.log = [];
-                }
-                if( typeof obj2 === 'symbol' ){
-                    dumper.log[dumper.log.length] = dumper.justify(finalPath, 64) + "= [Symbol] " + obj2.valueOf() + "\n";
-                }
-                else {
-                    dumper.log[dumper.log.length] = dumper.justify(finalPath, 64) + "= " + obj2 + "\n";
-                }
-            }
-            catch (e) {
-                dumper.log[dumper.log.length] = dumper.justify(finalPath, 64) + "~ [Unprintable " + (typeof obj2) + "]\n";
-            }
-        }
-
+    catch(e){ value = "" }
+    if(location){
+        console.log( `${location} = %c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
     }
-    if( depth == 0 ){
-        console.log(dumper.log.join("\n"));
-        console.groupEnd();
-        dumper.log = [];
+    else{
+        console.log( `%c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
     }
 }
-dumper.recursivelyExplore(window, "window", 0);
+
+dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {    
+
+    if( depth > dumper.MAX_SEARCH_DEPTH ){ return; }
+
+    // Avoid infinite recursion
+    if(refs.has(obj)){ dumper.advLog(obj,dumper.justify(location,32)); return; }
+    else if( obj!=null ){ refs.add(obj); }
+
+    let group = true;
+    for (const key in obj) {
+        
+        if( group ){ group = false; console.group(key); }
+        let value = obj[key];
+        let location = `${path}['${key}']`;
+
+        if( typeof(value) === 'object' ){
+            if( dumper.BANNED_KEYS.includes(key) ){ 
+                dumper.advLog(value,dumper.justify(location,32))
+            }
+            else{
+                try{
+                    dumper.recurse(value, location, depth+1, refs);  
+                }
+                finally{ }
+            }
+        }
+        else{
+            dumper.advLog(value,dumper.justify(location,32))
+        }
+
+    }
+    if( !group ){
+        console.groupEnd();
+    }
+    else{
+        dumper.advLog(obj,dumper.justify(path,32))
+    }
+}
+dumper.recurse(window, "window", 0);
