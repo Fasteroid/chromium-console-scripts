@@ -2,61 +2,59 @@
 *  Fast's JS Function Call Inspector: *
 *       Chrome Console Edition        *
 **************************************/
-var inspector = { traversed: {}, log: [], logs: 0, path: 0 };
+var inspector = { detours: new WeakMap() };
 
 /*  HOW TO USE:
- *  Paste into chrome console and smash enter to gain  T O T A L   O M N I P R E S E N C E!
- *  You can also detour subsets of the website by calling inspector.detour(window.subset);
- * 
- *  The antispam parameters are used to make sure chrome console isn't overwhelmed:
- *    inspector.burstTime    > how long each 'burst' lasts in ms
- *    inspector.burstLimit   > the max messages to log per burst
- * 
- *  All detoured functions will have these fields:
- *    .code  >  is what will be run instead of the original function.  This will be a call-logging detour by default.
- *    .old   >  will be the original non-detoured function.  Use this to revert function detours.
+    Paste in chrome console and hit enter.  Click on debug log events to expand them.  
+    Call inspector.revert() on detoured functions to unhook them from the detour system.
+    Add any problematic functions or objects to BANNED_PATHS to ban traversing them.  
 */
 
-inspector.BANNED_KEYS           = ["inspector"]; // searching for functions will stop at these keys
-inspector.BANNED_FUNCTIONS      = ["log"];       // functions under these keys will be left alone
-inspector.MAX_SEARCH_DEPTH      = 6;             // max recursive depth to look for functions
-inspector.DETOUR_NATIVE_FUNCS   = false;         // detour [native code] ?
-inspector.burstLimit            = 64;            // max messages per burstTime
-inspector.burstTime             = 100;           // in ms
+inspector.MAX_SEARCH_DEPTH = 5;     // Max recursive depth to search.
+inspector.DETOUR_METAMETHODS = true; // Be prepared to add entries to BANNED_KEYS to prevent the site from breaking with this on.
+inspector.GROUPING_MODE      = console.group  // or console.groupCollapsed
 
-inspector.DETOUR_ALL_INSTANTLY  = true;         // run the function detourer immediately on the entire DOM?
+// Something specific spamming console?  Completely breaking the website?  Add it here.  Feel free to make PRs with your additions.
+inspector.BANNED_PATHS = [
 
-// helper functions don't touch
-inspector.shouldExplore = function(val) { try { if (val === undefined || val === null) { return false } if (val + "" == "[object Window]") { return false; } return typeof val === 'object'; } catch (e) { return false; } } // avoid infinite recursion
-inspector.join = function(array){ var output = []; for (let index = 0; index < array.length; index++) { if( array[index] != null ){ if( typeof array[index] === 'string' ){ output[index] = "'" + array[index] + "'"; } else{ output[index] = array[index]; } } else{ output[index] = "null"} } return output.join(", "); } // display null properly
-inspector.isCustom = function(f){ return !(/\{\s*\[native code\]\s*\}/).test(f); } // does it have native code?
-inspector.trace = function(){ let trace = (new Error().stack).replaceAll("    ","").split("at ").splice(3); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index+1) + trace[index]; } return output.join(""); } // get fancy stack trace
-inspector.argobj = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
-inspector.returnobj = function Returned( obj ) { this.result = obj } // names the object "Arguments" in console
-inspector.originobj = function Origins( obj ) { this.function = obj }
-inspector.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
-inspector.resetAntiSpam = function(){ inspector.logs = 0; setTimeout( inspector.resetAntiSpam, inspector.burstTime ); }
-inspector.resetAntiSpam();
-inspector.handleLogging = function(data, args, result, exception){
-    if( (inspector.burstLimit <= 0 || inspector.logs < inspector.burstLimit) ){
-        inspector.logs++;
+    // general torture
+    "['document']","['frameElement']",
+
+    // jQuery memes
+    "window['$']['fn']['init']","window['$']['event']","window['$']['Event']","window['$']['find']",
+
+    // &what; unicode database (amp-what.com)
+    "window['_rollbarShims']","window['Rollbar']",
+
+    // YouTube
+    "window['Polymer']","window['ytPubsubPubsubInstance']"
+
+]; 
+
+{ 
+    // TODO: rework these functions so that they're pretty to look at in console
+    inspector.join = function(array){ var output = []; for (let index = 0; index < array.length; index++) { if( array[index] != null ){ if( typeof array[index] === 'string' ){ output[index] = "'" + array[index] + "'"; } else{ output[index] = array[index]; } } else{ output[index] = "null"} } return output.join(", "); } // display null properly
+    inspector.trace = function(){ let trace = (new Error().stack).replaceAll("    ","").split("at ").splice(3); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index+1) + trace[index]; } return output.join(""); } // get fancy stack trace
+    inspector.argobj = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } } // names the object "Arguments" in console
+    inspector.returnobj = function Returned( obj ) { this.result = obj } // names the object "Arguments" in console
+    inspector.originobj = function Origins( obj ) { this.function = obj }
+
+    inspector.handleLogging = function(data, args, result, exception){
         try{
-            console.groupCollapsed(data.location + "(" + inspector.join([...args]) + ");");
+            if(!exception){
+                console.groupCollapsed(data.location + "(" + inspector.join([...args]) + ");");
+            }
+            else{
+                console.group(data.location + "(" + inspector.join([...args]) + ");");
+                console.warn("Exception Thrown.");
+            }
             if(args.length > 0){
                 console.log(new inspector.argobj([...args]));
             }
-            if( result ){
+            if( result != undefined ){ // printing null might be important here
                 console.log(new inspector.returnobj(result));
             }
             console.log("Stack Trace:\n" + inspector.trace());
-            if( !exception || exception.passed ){
-                console.log("To Unhook:\n" + data.location + " = " + data.location + ".old;");
-                console.log(data.function);
-            }
-            else{
-                console.log(data.function);
-                console.warn("Unhooked.")
-            }
         }
         finally{
             console.groupEnd();
@@ -64,113 +62,105 @@ inspector.handleLogging = function(data, args, result, exception){
     }
 }
 
-inspector.seed = Math.random();
-inspector.firstDetours = { }
-
-inspector.detour = function (obj, root="", path=root, depth=0) { 
-    if( depth > inspector.MAX_SEARCH_DEPTH ) { return; }
-    if( depth == 0 ){ inspector.firstDetours[root] = false; }
-    if( obj._inspector_breadcrumb == inspector.seed ) { return; }
-    obj._inspector_breadcrumb = inspector.seed;
-    try{
-        for (const key in obj) {
-            var obj2 = obj[key];
-            if( inspector.shouldExplore(obj2) ){
-                if( inspector.BANNED_KEYS.includes(key) ){ continue; }
-                inspector.detour(obj2, root, path+"."+key, depth+1); 
-            }
-            else if( 
-                (obj2!==null) && (obj2!=undefined) && 
-                (typeof obj2 === 'function') && 
-                ( !obj2._wrapped ) &&
-                ( inspector.DETOUR_NATIVE_FUNCS || inspector.isCustom(obj2) ) 
-            ){
-                if( inspector.BANNED_FUNCTIONS.includes(key) ){ continue; }
-                if( !inspector.firstDetours[root] ){ 
-                    console.groupCollapsed("Detoured Function List"); 
-                    inspector.firstDetours[root] = true;
-                }
-                inspector.log[inspector.log.length] = inspector.justify( (obj2+"").split(")")[0] + "){...} ", 64) + " >\t\t"+ path+"."+key;                
-                
-                // janky hack mate, thanks
-                // https://traceoverflow.com/questions/9134686/adding-code-to-a-javascript-function-programmatically
-                obj[key] = (function() {
-
-                    let data = {};
-                    data.function = obj2;
-                    data.location = path+"."+key;
-                    data.parent   = obj;
-                    data.key      = key;
-                    let func_name;
-                    if( data.function.name != "" ){
-                        func_name = obj2.name + " [detoured "+data.location+"]"
-                    }
-                    else{
-                        func_name = key + " [detoured "+data.location+"]"
-                    }
-
-                    var detoured = {[func_name]: function() { /* INSPECTOR-WRAPPED FUNCTION */
-                        let result;
-                        let exception;
-
-                        try{ 
-                            result = data.function.apply(this, arguments); // use .apply() to call the original function
-                        }
-                        catch(e){
-                            if( !e.passed ){ // only revert the culprit
-                                console.warn("WARNING: function '"+data.location+"' threw an exception, unhooking.")
-                                data.parent[data.key] = data.function;
-                                exception = e;
-                            }
-                        }
-
-                        if( arguments[0] == inspector.resetAntiSpam ){ return result; } // skip everything after this if this is setTimeout antispam
-
-                        inspector.handleLogging(data,arguments,result,exception);
-                        if(exception){ 
-                            exception.passed = true;
-                            throw exception
-                        } // make sure to still throw any exceptions after we log them
-
-                        return result;
-
-                    }}[func_name];
-
-                    // fixes weird functions that have their own data fields
-                    for (const key in obj2) {
-                        if (Object.hasOwnProperty.call(obj2, key)) {
-                            detoured[key] = obj2[key];
-                        }
-                    }
-
-                    detoured._wrapped = true;
-                    detoured.code     = data.function;
-                    detoured.old      = obj2;
-
-                    return detoured;
-                })();
-
-                if(inspector.log.length > 64){
-                    console.log(inspector.log.join("\n"));
-                    inspector.log = [];
-                }
-
-            }
-        }
+inspector.includesPartial = function(strings,string){
+    for (const key in strings) {
+        if(string.includes(strings[key])){ return true; }
     }
-    catch(e){
-        console.log("Caught an exception while recursively detouring: ");
-        console.warn(e);
+    return false;
+}
+
+inspector.isBanned = function(key){
+    if( key == "window['inspector']" ){ return true; }
+    if( inspector.BANNED_PATHS.includes(key) ){ 
+        return true;
     }
-    finally{
-        if( depth == 0 & inspector.firstDetours[root] ){
-            console.log(inspector.log.join("\n"));
-            inspector.log = [];    
-            console.groupEnd();   
+    if( inspector.includesPartial(inspector.BANNED_PATHS,key) ){ 
+        return true;
+    }
+    return false;
+}
+
+inspector.revert = function(detoured_function){
+    let old = inspector.detours.get(detoured_function);
+    if( old ){
+        old();
+        console.log("Function unhooked.")
+    }
+    inspector.detours.delete(detoured_function);
+}
+
+inspector.cloneProperties = function(parent,child){
+    for(var key in parent) { // clone properties from old to new
+        if(parent.hasOwnProperty(key)) {
+            child[key] = parent[key];
         }
     }
 }
 
-if(inspector.DETOUR_ALL_INSTANTLY){
-    inspector.detour(window, "window");
+inspector.detour = function(obj,key,func,path) {
+
+    console.log(`detouring function at ${path}`)
+
+    var metadata = { }
+    metadata.name = key;
+    metadata.location = path;
+    metadata.old = func;
+
+    let detoured_function = function() {
+        let result;
+        try{ result = func.apply(this,arguments); } // use .apply() to call it
+        catch(e){ inspector.handleLogging(metadata,arguments,e,true); throw e; } // throw any caught exceptions
+        inspector.handleLogging(metadata,arguments,result);
+        return result;
+    };
+
+    inspector.detours.set(detoured_function,function(){obj[key] = func}); // make it easy to revert without adding any fields to the new function
+
+    inspector.cloneProperties(func,detoured_function);
+
+    obj[key] = detoured_function;
+
 }
+
+inspector.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) {    
+
+    if( depth > inspector.MAX_SEARCH_DEPTH ){ return; }
+
+    // Avoid infinite recursion
+    if(refs.has(obj)){ return; }
+    else if( obj!=null ){ refs.add(obj); }
+    let group = depth > 0;
+
+    for (const key in obj) {
+        try{
+            let value = obj[key]; // if we hit a css sheet this will throw an exception
+            if( value == window ){ continue; }
+            let type = typeof(value)
+            let newpath = `${path}['${key}']`;
+            let doDetour = false;
+            switch(type){
+                case 'function':
+                    doDetour = true;
+                    if( !inspector.DETOUR_METAMETHODS ){ break; }
+                case 'object':
+                    if( inspector.isBanned(newpath) ){ continue; }
+                    if( group && doDetour ){ group = false; inspector.GROUPING_MODE(relpath); }
+                    inspector.recurse(value, newpath, depth+1, key, refs);     
+                break;
+            }
+            if(doDetour){
+                inspector.detour(obj,key,value,newpath); // this has to be here due to recursion order 
+            }
+        }
+        catch(e){
+            console.log("Traversal Error")
+        }
+    }
+    if( !group ){
+        console.groupEnd();
+    }
+
+}
+console.groupCollapsed("Detours")
+inspector.recurse(window, "window");
+console.groupEnd()
