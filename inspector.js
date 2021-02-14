@@ -10,24 +10,15 @@ var inspector = { detours: new WeakMap() };
     Add any problematic functions or objects to BANNED_PATHS to ban traversing them.  
 */
 
-inspector.MAX_SEARCH_DEPTH = 5;     // Max recursive depth to search.
+inspector.MAX_SEARCH_DEPTH   = 5;     // Max recursive depth to search.
 inspector.DETOUR_METAMETHODS = true; // Be prepared to add entries to BANNED_KEYS to prevent the site from breaking with this on.
+// inspector
 inspector.GROUPING_MODE      = console.group  // or console.groupCollapsed
 
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Feel free to make PRs with your additions.
 inspector.BANNED_PATHS = [
 
-    // general torture
-    "['document']","['frameElement']",
-
-    // jQuery memes
-    "window['$']['fn']['init']","window['$']['event']","window['$']['Event']","window['$']['find']",
-
-    // &what; unicode database (amp-what.com)
-    "window['_rollbarShims']","window['Rollbar']",
-
-    // YouTube
-    "window['Polymer']","window['ytPubsubPubsubInstance']"
+    "['document']"
 
 ]; 
 
@@ -42,14 +33,14 @@ inspector.BANNED_PATHS = [
     inspector.handleLogging = function(data, args, result, exception){
         try{
             if(!exception){
-                console.groupCollapsed(data.location + "(" + inspector.join([...args]) + ");");
+                console.groupCollapsed(data.location + "(" + inspector.join(args) + ");");
             }
             else{
-                console.group(data.location + "(" + inspector.join([...args]) + ");");
+                console.group(data.location + "(" + inspector.join(args) + ");");
                 console.warn("Exception Thrown.");
             }
             if(args.length > 0){
-                console.log(new inspector.argobj([...args]));
+                console.log(new inspector.argobj(args));
             }
             if( result != undefined ){ // printing null might be important here
                 console.log(new inspector.returnobj(result));
@@ -83,10 +74,15 @@ inspector.isBanned = function(key){
 inspector.revert = function(detoured_function){
     let old = inspector.detours.get(detoured_function);
     if( old ){
-        old();
+        old.revert();
         console.log("Function unhooked.")
     }
     inspector.detours.delete(detoured_function);
+}
+
+inspector.getOld = function(detoured_function){
+    let old = inspector.detours.get(detoured_function);
+    return old.get();
 }
 
 inspector.cloneProperties = function(parent,child){
@@ -97,28 +93,43 @@ inspector.cloneProperties = function(parent,child){
     }
 }
 
-inspector.detour = function(obj,key,func,path) {
+inspector.detour = function(obj,key,path="unknown") {
 
-    console.log(`detouring function at ${path}`)
+    let func = obj[key];
 
-    var metadata = { }
-    metadata.name = key;
-    metadata.location = path;
-    metadata.old = func;
+    // I had a 1-on-1 talk with $.fn.init and found out the value of 'this' was different between the original func and the detoured one
+    // hopefully I can find a way to get and use the correct 'this' in the detoured calls
+    
+    if(func.toString().includes("this")){ 
+        console.warn(`WARNING: function at ${path} contained 'this'.  I can't hook those functions yet.`)
+        return false;
+    }
+    else{
+        console.log(`detouring function at ${path}`)
+    }
 
-    let detoured_function = function() {
-        let result;
-        try{ result = func.apply(this,arguments); } // use .apply() to call it
-        catch(e){ inspector.handleLogging(metadata,arguments,e,true); throw e; } // throw any caught exceptions
+    let metadata = { }
+    metadata.location = `${path}['${key}']`;
+    metadata.old      = func;
+    let func_name = metadata.location + " [detoured]"
+
+    let detoured_function = {[func_name]: (function() {
+        let result = func.apply(this,arguments);
         inspector.handleLogging(metadata,arguments,result);
-        return result;
-    };
+        if( result != undefined ){
+            return result; 
+        }
+    })}[func_name]
 
-    inspector.detours.set(detoured_function,function(){obj[key] = func}); // make it easy to revert without adding any fields to the new function
+    inspector.detours.set(detoured_function,{ // make it easy to revert without adding any fields to the new function
+        revert: (function(){obj[key] = func}),
+        get: (function(){return func})
+    }); 
 
     inspector.cloneProperties(func,detoured_function);
 
     obj[key] = detoured_function;
+    return true;
 
 }
 
@@ -149,7 +160,7 @@ inspector.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet(
                 break;
             }
             if(doDetour){
-                inspector.detour(obj,key,value,newpath); // this has to be here due to recursion order 
+                inspector.detour(obj,key,newpath); // this has to be here due to recursion order 
             }
         }
         catch(e){
