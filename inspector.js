@@ -2,7 +2,7 @@
 *  Fast's JS Function Call Inspector: *
 *       Chrome Console Edition        *
 **************************************/
-var inspector = { detours: new WeakMap() };
+var inspector = { detours: new WeakMap(), spamcounter: 0 };
 
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Click on debug log events to expand them.  
@@ -10,17 +10,19 @@ var inspector = { detours: new WeakMap() };
     Add any problematic functions or objects to BANNED_PATHS to ban traversing them.  
 */
 
-inspector.MAX_SEARCH_DEPTH   = 5;     // Max recursive depth to search.
-inspector.DETOUR_METAMETHODS = true; // Be prepared to add entries to BANNED_KEYS to prevent the site from breaking with this on.
-// inspector
+inspector.MAX_SEARCH_DEPTH   = 5;             // Max recursive depth to search.
+inspector.DETOUR_METAMETHODS = true;          // Look for functions stored under functions and detour those too!
+inspector.ANTISPAM_INTERVAL  = 1000           // in ms
+inspector.ANTISPAM_QUOTA     = 64             // max logs per interval
 inspector.GROUPING_MODE      = console.group  // or console.groupCollapsed
 
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Feel free to make PRs with your additions.
 inspector.BANNED_PATHS = [
-
     "['document']"
-
 ]; 
+
+inspector.antispam = function(){ inspector.spamcounter = 0; setTimeout(inspector.antispam,inspector.ANTISPAM_INTERVAL) }
+inspector.antispam()
 
 { 
     // TODO: rework these functions so that they're pretty to look at in console
@@ -30,19 +32,17 @@ inspector.BANNED_PATHS = [
     inspector.returnobj = function Returned( obj ) { this.result = obj } // names the object "Arguments" in console
     inspector.originobj = function Origins( obj ) { this.function = obj }
 
-    inspector.handleLogging = function(data, args, result, exception){
+    inspector.handleLogging = function(data, args, result){
+        if(inspector.spamcounter == inspector.ANTISPAM_QUOTA){ console.warn(`ANTISPAM: Suppressing further logs for the next ${inspector.ANTISPAM_INTERVAL} ms`) }
+        if(inspector.spamcounter > inspector.ANTISPAM_QUOTA){ return }
+        if(args[0] == inspector.antispam){ return }
         try{
-            if(!exception){
-                console.groupCollapsed(data.location + "(" + inspector.join(args) + ");");
-            }
-            else{
-                console.group(data.location + "(" + inspector.join(args) + ");");
-                console.warn("Exception Thrown.");
-            }
+            inspector.spamcounter++;
+            console.groupCollapsed(`${data.location}(${inspector.join(args)});`);
             if(args.length > 0){
                 console.log(new inspector.argobj(args));
             }
-            if( result != undefined ){ // printing null might be important here
+            if( typeof result !== 'undefined' ){ // printing null might be important here
                 console.log(new inspector.returnobj(result));
             }
             console.log("Stack Trace:\n" + inspector.trace());
