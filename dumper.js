@@ -15,14 +15,14 @@ dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
 dumper.group = console.group          // change this to groupCollapsed if you're crashing
 
 dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
-    string: "#999999",
-    number: "#ff6666",
-    bigint: "",
-    boolean: "#668cff",
-    symbol: "#80ff80",
-    object: "#fbfb51",
-    undefined: "",
-    function: "#fc83fc"
+    string:    "color: #999999;",
+    number:    "color: #ff6666;",
+    bigint:    "color: #660000;",
+    boolean:   "color: #668cff;",
+    symbol:    "color: #80ff80;",
+    object:    "color: #fbfb51;",
+    undefined: "color: #000000;",
+    function:  "color: #fc83fc;"
 }
 
 
@@ -47,10 +47,10 @@ dumper.advLog = function(value,path){
     }
     catch(e){ value = "" }
     if(path){
-        console.log( `${path} = %c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
+        console.log( `${path} = %c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
     }
     else{
-        console.log( `%c${type} %c${value}`, "color: #ff944d;", `color: ${dumper.COLORS[type]};` )
+        console.log( `%c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
     }
 }
 
