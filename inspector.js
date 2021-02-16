@@ -20,15 +20,16 @@ var inspector = {
 
 inspector.MAX_SEARCH_DEPTH   = 5;             // Max recursive depth to search.
 inspector.DETOUR_METAMETHODS = true;          // Look for functions stored under functions and detour those too!
-inspector.ANTISPAM_INTERVAL  = 1000;           // in ms
-inspector.ANTISPAM_QUOTA     = 64;             // max logs per interval
-inspector.LIST_GROUPING_MODE = console.group;  // or console.groupCollapsed
-inspector.LIST_DETOURED      = true;          // can get laggy
+inspector.ANTISPAM_INTERVAL  = 1000;          // in ms
+inspector.ANTISPAM_QUOTA     = 64;            // max logs per interval
+inspector.LIST_GROUPING_MODE = console.group; // or console.groupCollapsed
+inspector.LIST_DETOURED      = true;          // list all attempted detours
+inspector.MIN_CPU_TO_LOG     = 50;            // don't log any calls that take less than this
 
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Supports both full paths and substrings of paths.
 // Feel free to make a PR if you find something nasty I haven't added yet.
 inspector.BANNED_PATHS = [
-    "window.document","frameElement","webpackJsonp","cssRules","document"
+    "window.document","frameElement","webpackJsonp","cssRules","document",".apply"
 ]; 
 
 inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
@@ -75,9 +76,7 @@ else{
 }
 
 inspector.getPrettyCall = function(data,args){
-    // console.log(args)
-
-    let tags = [`%c ${(data.ctime*1000).toFixed(1)}us %c| `,inspector.COLORS.string,inspector.COLORS.default];
+    let tags = [`%c ${(data.ctime).toFixed(0)}us %c| `,inspector.COLORS.string,inspector.COLORS.default];
     if(args.length==0){
         tags[0] += `${data.location}();`
         return tags;
@@ -91,55 +90,51 @@ inspector.getPrettyCall = function(data,args){
     tags[0] += `${data.location}(%c${inspector.join(args)}%c);`;
     return tags;
 }
-{ 
-    // TODO: rework these functions so that they're pretty to look at in console
-    inspector.join = function(array){ 
-        var output = []; 
-        for (let index = 0; index < array.length; index++){ 
-            if( array[index] === null ){ 
-                output[index] = "null";
-            } 
-            else{ 
-                let type = typeof(array[index])
-                switch( type ){
-                    case 'string': output[index] = `\`${array[index]}\``; break;
-                    case 'object': output[index] = `[Object ${(inspector.getOld(array[index].constructor).name)}]`; break;
-                    case 'undefined': output[index] = 'undefined'; break;
-                    default: output[index] = array[index]; break;
-                }
-            } 
+
+inspector.join = function(array){ 
+    var output = []; 
+    for (let index = 0; index < array.length; index++){ 
+        if( array[index] === null ){ 
+            output[index] = "null";
         } 
-        return output.join("%c, %c"); 
-    }; // display null properly
+        else{ 
+            let type = typeof(array[index])
+            switch( type ){
+                case 'string': output[index] = `\`${array[index]}\``; break;
+                case 'object': output[index] = `[Object ${(inspector.getOld(array[index].constructor).name)}]`; break;
+                case 'undefined': output[index] = 'undefined'; break;
+                default: output[index] = array[index]; break;
+            }
+        } 
+    } 
+    return output.join("%c, %c"); 
+}; // display null properly
 
-    
-    inspector.trace = function(){ let trace = (new Error().stack).replaceAll("    ","").split("at ").splice(3); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index+1) + trace[index]; } return output.join(""); }; // get fancy stack trace
-    inspector.argobj = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } }; // names the object "Arguments" in console
-    inspector.returnobj = function Returned( obj ) { this.result = obj; }; // names the object "Arguments" in console
-    inspector.originobj = function Origins( obj ) { this.function = obj; };
+inspector.trace = function(){ let trace = (new Error().stack).replaceAll("    ","").split("at ").splice(3); var output = []; for (let index = 0; index < trace.length; index++) { output[index] = " ".repeat(index+1) + trace[index]; } return output.join(""); }; // get fancy stack trace
+inspector.argobj = function Arguments( args ) { for (let index = 0; index < args.length; index++) { this[index] = args[index]; } }; // names the object "Returned" in console
+inspector.returnobj = function Returned( obj ) { this.result = obj; }; // names the object "Arguments" in console
 
-    inspector.handleLogging = function(data, args, result){
+inspector.handleLogging = function(data, args, result){
 
-        if(inspector.spamcounter == inspector.ANTISPAM_QUOTA){ console.warn(`ANTISPAM: Suppressing further logs for the next ${inspector.ANTISPAM_INTERVAL} ms`); }
-        if(inspector.spamcounter > inspector.ANTISPAM_QUOTA){ return; }
-        if(args[0] == inspector.antispam){ return; } // setTimeout() hack
-        inspector.spamcounter++;
+    if(args[0] == inspector.antispam){ return; } // ignore antispam setTimeout calls
+    if(data.ctime < inspector.MIN_CPU_TO_LOG){ return; } // boooring
+    if(inspector.spamcounter == inspector.ANTISPAM_QUOTA){ console.warn(`ANTISPAM: Suppressing further logs for the next ${inspector.ANTISPAM_INTERVAL} ms`); }
+    if(inspector.spamcounter > inspector.ANTISPAM_QUOTA){ return; }
+    inspector.spamcounter++;
 
-        try{
-            const colors = inspector.COLORS;
-            console.groupCollapsed.apply(this,inspector.getPrettyCall(data,args));
-                if(args.length > 0){ console.log(new inspector.argobj(args)); }
-                if( typeof result !== 'undefined' ){ console.log(new inspector.returnobj(result)); }
-                console.log(data.old);
-                console.log("Stack Trace:\n" + inspector.trace());
+    try{
+        console.groupCollapsed.apply(this,inspector.getPrettyCall(data,args));
+            if(args.length > 0){ console.log(new inspector.argobj(args)); }
+            if( typeof result !== 'undefined' ){ console.log(new inspector.returnobj(result)); }
+            console.log(data.old);
+            console.log("Stack Trace:\n" + inspector.trace());
 
-        }
-        finally{
-            console.groupEnd();
-        }
+    }
+    finally{
+        console.groupEnd();
+    }
 
-    };
-}
+};
 
 inspector.includesPartial = function(strings,string){
     for (const key in strings) {
@@ -190,17 +185,13 @@ inspector.detour = function(obj,key,path="unknown") {
         let metadata = {
             location : path,
             old      : func,
-            ttime    : 0,
             ctime    : 0,
-            //origin   : new inspector.originobj(func),
         }
         metadata.detoured = {[func_name]: (function() {
             let finish, start = performance.now()
             result = func.apply(this,arguments);
             finish = performance.now();
-            metadata.ctime = (finish-start);
-            //metadata.ttime += metadata.ctime;
-            //inspector.ttime += metadata.ctime;
+            metadata.ctime = (finish-start)*1000;
             inspector.handleLogging(metadata,arguments,result);
             if( result != undefined ){
                 return result; 
