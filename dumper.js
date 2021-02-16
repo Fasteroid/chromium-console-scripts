@@ -3,7 +3,11 @@
 *      Chrome Console Edition       *
 ************************************/
 // version 2
-var dumper = { };
+var dumper = { 
+    isCursedKey: (key) => key.match(/[^(a-z|$|A-Z)]/), 
+    justify: (string,value) => (string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4)))),
+    isBannedKey: (key) => key == "dumper" || dumper.BANNED_KEYS.includes(key),
+};
 
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Take care if you set the max search depth really high.
@@ -14,26 +18,29 @@ dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
 
 dumper.group = console.group          // change this to groupCollapsed if you're crashing
 
-dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
+inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
     string:    "color: #999999;",
     number:    "color: #ff6666;",
-    bigint:    "color: #660000;",
+    bigint:    "color: #a45b5b;",
     boolean:   "color: #668cff;",
-    symbol:    "color: #80ff80;",
-    object:    "color: #fbfb51;",
-    undefined: "color: #000000;",
-    function:  "color: #fc83fc;"
-}
+    symbol:    "color: #fbfb51;",
+    object:    "color: #80ff80;",
+    undefined: "color: #ffb56b;",
+    function:  "color: #fc83fc;",
+};
 
-
-dumper.justify = function(string,value){ return string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4))) } // aligns text
-
-dumper.isBannedKey = function(key){
-    if( key == "dumper" ){ return true; }
-    if( dumper.BANNED_KEYS.includes(key) ){ 
-        return true;
+dumper.getPath = function(path,key){
+    if( dumper.isCursedKey(key) ){
+        if( parseInt(key) != NaN ){ // int
+            return `${path}[${key}]`
+        }
+        else{ // something nasty
+            return `${path}[\`${key}\`]`
+        }
     }
-    return false;
+    else{
+        return `${path}.${key}`;
+    }
 }
 
 // call this on any value and leave location blank to print advanced data about it
@@ -68,7 +75,7 @@ dumper.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) 
         let value = obj[key];
         if( value == window ){ continue; }
         let type = typeof(value)
-        let newpath = `${path}['${key}']`;
+        let newpath = dumper.getPath(path,key);
         if( group ){ group = false; dumper.group(relpath); }
 
         switch(type){
