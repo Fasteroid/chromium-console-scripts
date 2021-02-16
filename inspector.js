@@ -5,7 +5,7 @@
 var inspector = { 
     detours: new WeakMap(), 
     spamcounter: 0, 
-    isCursedKey: (key) => key.match(/[^(a-z|$|A-Z)]/),
+    isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
     isBanned: (key) => key == "window.inspector" || key=="window.performance" || inspector.BANNED_PATHS.includes(key) || inspector.includesPartial(inspector.BANNED_PATHS,key), // pls don't remove hardcoded values from here
     antispam: () => { inspector.spamcounter = 0; setTimeout(inspector.antispam,inspector.ANTISPAM_INTERVAL); },
     ttime: 0
@@ -182,7 +182,7 @@ inspector.detour = function(obj,key,path="unknown") {
         // I had a 1-on-1 talk with $.fn.init and found out the value of 'this' was different between the original func and the detoured one
         // hopefully I can find a way to get and use the correct 'this' in the detoured calls
         
-        if(func.toString().includes("this")){ 
+        if(func.toString().includes("this.")){ 
             return false;
         }
 
