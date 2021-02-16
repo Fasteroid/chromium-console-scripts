@@ -7,7 +7,7 @@ var inspector = { // don't touch anything in here
     detours: new WeakMap(), 
     byPaths: [],
     spamcounter: 0, 
-    isCursedKey: (key) => key.match(/[^(a-z|$|A-Z)]/),
+    isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
     isBanned: (key) => key == "window.inspector" || key=="window.performance" || inspector.BANNED_PATHS.includes(key) || inspector.includesPartial(inspector.BANNED_PATHS,key), // pls don't remove hardcoded values from here
     antispam: () => { inspector.spamcounter = 0; setTimeout(inspector.antispam,inspector.ANTISPAM_INTERVAL); },
     ttime: 0,
