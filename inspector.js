@@ -33,7 +33,7 @@ inspector.DETOUR_NATIVE      = true;
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Supports both full paths and substrings of paths.
 // Feel free to make a PR if you find something nasty I haven't added yet.
 inspector.BANNED_PATHS = [
-    "window.document","frameElement","webpackJsonp","cssRules","document",".apply","onTick","shouldRunAtMaxSpeed","React","setTimeout","timedOut","Firebase"
+    "window.document","frameElement","webpackJsonp","cssRules","document",".apply","onTick","shouldRunAtMaxSpeed","React","timedOut"
 ]; 
 
 inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
