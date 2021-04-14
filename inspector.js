@@ -19,21 +19,21 @@ var inspector = {
     Add any problematic functions or objects to BANNED_PATHS to ban traversing them.  
 */
 
-inspector.MAX_SEARCH_DEPTH   = 5;             // Max recursive depth to search.
-inspector.MAX_SEARCH_WIDTH   = 16;            // Any object besides window with more objects stored under it than this will be ignored.
+inspector.MAX_SEARCH_DEPTH   = 15;             // Max recursive depth to search.
+inspector.MAX_SEARCH_WIDTH   = 100;            // Any object besides window with more objects stored under it than this will be ignored.
 inspector.DETOUR_METAMETHODS = true;          // Look for functions stored under functions and detour those too!
 inspector.ANTISPAM_INTERVAL  = 1000;          // in ms
 inspector.ANTISPAM_QUOTA     = 64;            // max logs per interval
 inspector.LIST_GROUPING_MODE = console.group; // or console.groupCollapsed
 inspector.LIST_DETOURED      = true;          // list attempted detours
-inspector.LIST_SUCCESS_ONLY  = false;          // only list successful detours
-inspector.MIN_CPU_TO_LOG     = 50;            // don't log any calls that take less than this
-inspector.DETOUR_NATIVE      = false;         
+inspector.LIST_SUCCESS_ONLY  = true;          // only list successful detours
+inspector.MIN_CPU_TO_LOG     = 5;            // don't log any calls that take less than this
+inspector.DETOUR_NATIVE      = true;         
 
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Supports both full paths and substrings of paths.
 // Feel free to make a PR if you find something nasty I haven't added yet.
 inspector.BANNED_PATHS = [
-    "window.document","frameElement","webpackJsonp","cssRules","document",".apply"
+    "window.document","frameElement","webpackJsonp","cssRules","document",".apply","onTick","shouldRunAtMaxSpeed","React","setTimeout","timedOut","Firebase"
 ]; 
 
 inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
