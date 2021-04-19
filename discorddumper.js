@@ -16,14 +16,12 @@ let MessageHeader;
 let DiscordDumper = {
     totalLogged: 0,
     scroller: $('[class^="scrollerInner"]'),
-    text: "",
     msgLog: function(msg){
         if( msg.className.search("message") == 0 ){
             checkForHeader = msg.querySelector("h2");
             if( checkForHeader ){
                 MessageHeader = checkForHeader.firstChild.firstChild.innerText + ": ";
             }
-            console.log(MessageHeader)
             DiscordMessages = DiscordMessages + MessageHeader
             DiscordMessages = DiscordMessages + msg.firstChild.lastChild.innerText + "\n";
         }
@@ -47,4 +45,4 @@ for( let msg of DiscordDumper.scroller.children ){
     DiscordDumper.totalLogged++;
 }
 console.log("Logged "+DiscordDumper.totalLogged+" messages initially...");
-observer.observe(DiscordDumper.scroller, { attributes: true, childList: true, characterData: true });
+DiscordDumper.observer.observe(DiscordDumper.scroller, { attributes: true, childList: true, characterData: true });
