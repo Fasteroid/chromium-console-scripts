@@ -11,7 +11,7 @@
     USE:     Scroll down to capture more DMs.
     DONE:    call DiscordDumper.print() to get your messages!
 */
-
+let text = "";
 let DiscordDumper = {
     totalLogged: 0,
     scroller: $('[class^="scrollerInner"]'),
@@ -20,12 +20,12 @@ let DiscordDumper = {
         if( msg.className.search("message") == 0 ){
             header = msg.querySelector("h2");
             if( header ){
-                DiscordDumper.text = DiscordDumper.text + header.firstChild.firstChild.innerText + ": ";
+                text = text + header.firstChild.firstChild.innerText + ": ";
             }
-            DiscordDumper.text = DiscordDumper.text + msg.firstChild.lastChild.innerText + "\n";
+            text = text + msg.firstChild.lastChild.innerText + "\n";
         }
     },
-    print: function(){ console.log(DiscordDumper.text) },
+    print: function(){ console.log(text) },
     observer: new MutationObserver(function(mutations) {
         let count = 0
         for( let change of mutations ){
