@@ -20,9 +20,9 @@ let DiscordDumper = {
         if( msg.className.search("message") == 0 ){
             header = msg.querySelector("h2");
             if( header ){
-                text = text + header.firstChild.firstChild.innerText + ": ";
+                DiscordDumper.text = DiscordDumper.text + header.firstChild.firstChild.innerText + ": ";
             }
-            text = text + msg.firstChild.lastChild.innerText + "\n";
+            DiscordDumper.text = DiscordDumper.text + msg.firstChild.lastChild.innerText + "\n";
         }
     },
     print: function(){ console.log(DiscordDumper.text) },
