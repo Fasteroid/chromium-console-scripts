@@ -9,3 +9,9 @@ The cursed version lets you detour even passed arguments and returned functions.
 
 ## JS Global Corruptor
 Paste in chrome console and run to change all discovered values to different values of the same type.  The results of this can range from boring to spectacular—strings seem to be the most entertaining thing to corrupt.  This script has the potential to corrupt your cookies if you randomize functions, which may result in websites breaking persistently.  If this happens, simply clear your cookies and refresh.  Have fun!
+
+## JS Discord Dumper
+Ctrl+Shift+I in Discord, paste in chromium console, and run to record a transcript of DMs as you scroll.  Start at the top and work your way down.
+
+## JS Discord Impersonator
+Ctrl+Shift+I in Discord, paste in chromium console, configure, and run to locally re-face users in your discord client to look like others.  Can modify names, avatars, role colors, and discriminators.  Applies the changes to almost every place containing user-related information.
