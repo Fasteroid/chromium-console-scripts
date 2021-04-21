@@ -43,7 +43,7 @@ let observer = new MutationObserver(
         console.log("Appended "+count+" messages");
     }
 )
-for( let msg of DiscordDumper.scroller.children ){ 
+for( let msg of scroller.children ){ 
     msgLog(msg);
     totalLogged++;
 }
