@@ -12,6 +12,3 @@ Paste in chrome console and run to change all discovered values to different val
 
 ## JS Discord Dumper
 Ctrl+Shift+I in Discord, paste in chromium console, and run to record a transcript of DMs as you scroll.  Start at the top and work your way down.
-
-## JS Discord Impersonator
-Ctrl+Shift+I in Discord, paste in chromium console, configure, and run to locally re-face users in your discord client to look like others.  Can be used to modify names, avatars, role colors, and discriminators, and applies to almost all of the discord client.
