@@ -4,7 +4,7 @@
 ************************************/
 // version 2
 var dumper = { 
-    isCursedKey: (key) => key.match(/[^(a-z|$|A-Z)]/), 
+    isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
     justify: (string,value) => (string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4)))),
     isBannedKey: (key) => key == "dumper" || dumper.BANNED_KEYS.includes(key),
 };
@@ -18,7 +18,7 @@ dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
 
 dumper.group = console.group          // change this to groupCollapsed if you're crashing
 
-inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
+dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
     string:    "color: #999999;",
     number:    "color: #ff6666;",
     bigint:    "color: #a45b5b;",
