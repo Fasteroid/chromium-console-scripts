@@ -1,14 +1,17 @@
-This is a small collection of JS scripts for chrome console that might be useful for reverse-engineering or debugging.
+My slowly-growing collection of chromium console scripts.  May occasionally prove useful for debugging or reverse-engineering things.
 
-## JS Global Dumper
-Paste in chrome console and run to recursively print all discovered values and their types to console.  Can be memory intensive and may crash chrome console on larger websites when using high recursion depth.  Object paths can be blacklisted if necessary.
+## Chrome Dumper
+Paste in chrome console and run to recursively print all discovered JS variables and their types to console.&ensp;Can be memory intensive and may crash chrome console on larger websites when using high recursion depth.&ensp;Object paths can be blacklisted if necessary.
 
-## JS Call Inspector
-Paste in chrome console and run to attach debug events to all discovered functions.  Has support for antispam, path blacklisting, and selective detouring of parts of a website. 
-The cursed version is broken—use at your own risk.
+## Chrome Inspector
+Paste in chrome console and run to attach debug events to all discovered JS functions.&ensp;Has support for antispam, path blacklisting, and selective detouring of parts of a website.
 
-## JS Global Corruptor
-Paste in chrome console and run to change all discovered values to different values of the same type.  The results of this can range from boring to spectacular—strings seem to be the most entertaining thing to corrupt.  This script has the potential to corrupt your cookies if you randomize functions, which may result in websites breaking persistently.  If this happens, simply clear your cookies and refresh.  Have fun!
+## Chrome Corruptor
+Paste in chrome console and run to change all discovered JS variables to different values of the same type from elsewhere on the site.&ensp;The results of this can range from boring to spectacular.&ensp;Strings are currently the most entertaining and safe thing to corrupt.<br>
+<i><b>NOTE:</b>&ensp;Running this can create bad cookies that persistently break things.&ensp;Fixing this requires clearing your cookies if it happens.</i>
 
-## JS Discord Dumper
-Ctrl+Shift+I in Discord, paste in chromium console, and run to record a transcript of DMs as you scroll.  Start at the top and work your way down.
+## Discord Dumper
+Ctrl+Shift+I in Discord, paste in chromium console, and run to record a transcript of DMs as you scroll.&ensp;Start at the top and scroll your way down.&ensp;Might not work as of the most recent update; haven't tested yet.
+
+## Gamer Text
+This one is stupid, all it does is give most text on the sote an rgb color-scrolling effect.&ensp;It can probably be modified to do funnier things than this too.
