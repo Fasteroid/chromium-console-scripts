@@ -7,8 +7,8 @@ Paste in chrome console and run to recursively print all discovered JS variables
 Paste in chrome console and run to attach debug events to all discovered JS functions.&ensp;Has support for antispam, path blacklisting, and selective detouring of parts of a website.
 
 ## Chrome Corruptor
-Paste in chrome console and run to change all discovered JS variables to different values of the same type from elsewhere on the site.&ensp;The results of this can range from boring to spectacular.&ensp;Strings are often the most entertaining thing to corrupt.<br>
-<i><b>NOTE:</b>&ensp;Running this may result in bad cookies that persistently break sites.&ensp;If this happens, you will have to clear your cookies.</i>
+Paste in chrome console and run to change all discovered JS variables to different values of the same type from elsewhere on the site.&ensp;The results of this can range from boring to spectacular.&ensp;Strings are currently the most entertaining and safe thing to corrupt.<br>
+<i><b>NOTE:</b>&ensp;Running this can create bad cookies that persistently break things.&ensp;Fixing this requires clearing your cookies if it happens.</i>
 
 ## Discord Dumper
 Ctrl+Shift+I in Discord, paste in chromium console, and run to record a transcript of DMs as you scroll.&ensp;Start at the top and scroll your way down.&ensp;Might not work as of the most recent update; haven't tested yet.
