@@ -12,11 +12,10 @@ var dumper = {
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Take care if you set the max search depth really high.
 */
-dumper.BANNED_KEYS      = ["document"]; // traversal will stop at these keys
-dumper.MAX_SEARCH_DEPTH = 10;                    // max recursive depth to search
-dumper.MAX_SEARCH_WIDTH = 100;                   // any object besides window with more objects stored under it than this will be ignored.
-dumper.HARD_QUOTA       = 
-dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
+dumper.BANNED_KEYS         = ["document"]; // traversal will stop at these keys
+dumper.MAX_SEARCH_DEPTH    = 10;           // max recursive depth to search
+dumper.MAX_SEARCH_WIDTH    = 100;          // any object besides window with more objects stored under it than this will be ignored.
+dumper.IGNORE_NATIVE_FUNCS = true;         // don't dump native JS
 
 dumper.LIST_GROUPING_MODE = console.groupCollapsed  // can be changed to console.group, but not reccommended
 
@@ -55,7 +54,6 @@ dumper.includesPartial = function(strings,string){
 
 // call this on any value and leave location blank to print advanced data about it
 dumper.advLog = function(thing,path,mode){
-    if( thing==null || !dumper.IGNORE_NULL ){ return } // nothing to see here...
     let type = typeof(thing);
     let value = "failed..."
     try{
@@ -69,7 +67,7 @@ dumper.advLog = function(thing,path,mode){
             case 'object':
                 value = thing + ""
                 if(!value.startsWith("[")){
-                    value = "[...]"
+                    value = `[...]`
                     type = "array";
                 }
             break;
@@ -108,6 +106,9 @@ dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
 
             switch(type){
                 case 'function':
+                    if( dumper.IGNORE_NATIVE_FUNCS && (value+"").includes("[native code]") ){
+                        continue bruh;
+                    }
                 case 'object':
                     if( dumper.isBanned(newpath) ){ 
                         continue bruh; 
