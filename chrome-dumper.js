@@ -6,17 +6,19 @@
 var dumper = { 
     isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
     justify: (string,value) => (string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4)))),
-    isBannedKey: (key) => key == "dumper" || dumper.BANNED_KEYS.includes(key),
+    isBanned: (key) => key == "window.dumper" || dumper.includesPartial(dumper.BANNED_KEYS,key), // pls don't remove hardcoded values from here
 };
 
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Take care if you set the max search depth really high.
 */
-dumper.BANNED_KEYS      = ["dumper","document"]; // traversal will stop at these keys
-dumper.MAX_SEARCH_DEPTH = 10;         // max recursive depth to search
+dumper.BANNED_KEYS      = ["document"]; // traversal will stop at these keys
+dumper.MAX_SEARCH_DEPTH = 10;                    // max recursive depth to search
+dumper.MAX_SEARCH_WIDTH = 100;                   // any object besides window with more objects stored under it than this will be ignored.
+dumper.HARD_QUOTA       = 
 dumper.IGNORE_NULL      = true;       // if true, don't print keys that are null
 
-dumper.group = console.group          // change this to groupCollapsed if you're crashing
+dumper.LIST_GROUPING_MODE = console.groupCollapsed  // can be changed to console.group, but not reccommended
 
 dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
     string:    "color: #999999;",
@@ -25,6 +27,7 @@ dumper.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
     boolean:   "color: #668cff;",
     symbol:    "color: #fbfb51;",
     object:    "color: #80ff80;",
+    array:     "color: #80ff80;",
     undefined: "color: #ffb56b;",
     function:  "color: #fc83fc;",
 };
@@ -43,62 +46,86 @@ dumper.getPath = function(path,key){
     }
 }
 
-// call this on any value and leave location blank to print advanced data about it
-dumper.advLog = function(value,path){
-    if( value==null || !dumper.IGNORE_NULL ){ return } // nothing to see here...
-    let type = typeof(value);
-    try{
-        if( type == 'symbol' ){ value = value.valueOf() } // ugh
-        else if( type == 'string' ){ value = `"${value}"`}
-        value+"";
+dumper.includesPartial = function(strings,string){
+    for (const key in strings) {
+        if(string.includes(strings[key])){ return true; }
     }
-    catch(e){ value = "" }
+    return false;
+};
+
+// call this on any value and leave location blank to print advanced data about it
+dumper.advLog = function(thing,path,mode){
+    if( thing==null || !dumper.IGNORE_NULL ){ return } // nothing to see here...
+    let type = typeof(thing);
+    let value = "failed..."
+    try{
+        switch(type){
+            case 'symbol': value = thing.valueOf(); break; // ugh
+            case 'string': value = `"${thing}"`; break;
+            case 'function': 
+                value = (thing + "").match(/(function\s*)([^\)]*\(.+)/); 
+                if(value){ value = value[2] }
+                break;
+            case 'object':
+                value = thing + ""
+                if(!value.startsWith("[")){
+                    value = "[...]"
+                    type = "array";
+                }
+            break;
+            default: value = thing + "";
+        }
+    }
+    finally{}
     if(path){
-        console.log( `${path} = %c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
+        dumper.advLog[mode]( `${path} = %c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
     }
     else{
-        console.log( `%c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
+        dumper.advLog[mode]( `%c${type} %c${value}`, "color: #ff944d;", dumper.COLORS[type] )
     }
 }
+dumper.advLog.undefined = console.log
+dumper.advLog.true      = dumper.LIST_GROUPING_MODE
 
-dumper.recurse = function(obj, path, depth=0, relpath=path, refs=new WeakSet()) {    
+dumper.recurse = function(obj, path, depth=0, refs=new WeakSet()) {    
 
     if( depth > dumper.MAX_SEARCH_DEPTH ){ return; }
 
     // Avoid infinite recursion
-    if(refs.has(obj)){ dumper.advLog(obj,dumper.justify(path,32)); return; }
+    if(refs.has(obj)){ return; }
     else if( obj!=null ){ refs.add(obj); }
 
-    let group = depth > 0;
-    for (const key in obj) {
-        
-        let value = obj[key];
-        if( value == window ){ continue; }
-        let type = typeof(value)
-        let newpath = dumper.getPath(path,key);
-        if( group ){ group = false; dumper.group(relpath); }
+    dumper.advLog(obj, path, true); 
 
-        switch(type){
-            case 'function':
-                dumper.advLog(value,dumper.justify(newpath,32));
-            case 'object':
-                if( dumper.isBannedKey(key) ){ continue; }
-                try{
-                    dumper.recurse(value, newpath, depth+1, key, refs);  
-                }
-                finally{ }
-            break;
-            default:
-                dumper.advLog(value,dumper.justify(newpath,32));
-            break;
+    bruh: for (const key in obj) {
+        try{
+
+            let value = obj[key]; // if we hit a css sheet this will throw an exception
+            if( value === null ){ continue; } // skip null
+            if( value.window ){ continue; } // no.
+            let type = typeof(value);
+            let newpath = dumper.getPath(path,key);
+
+            switch(type){
+                case 'function':
+                case 'object':
+                    if( dumper.isBanned(newpath) ){ 
+                        continue bruh; 
+                    }
+                    dumper.recurse(value, newpath, depth+1, refs);          
+                break;
+                default:
+                    dumper.advLog(value, newpath)
+                break;
+            }
+
         }
+        catch(e){
+            console.error(e);
+        }
+    }
 
-    }
-    if( !group ){
-        console.groupEnd();
-    }
-    else{
-        dumper.advLog(obj,dumper.justify(path,32))
-    }
-}
-dumper.recurse(window, "window");
+    console.groupEnd(); 
+
+};
+dumper.recurse(window,"window")
