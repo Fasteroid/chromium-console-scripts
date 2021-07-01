@@ -24,7 +24,7 @@ Get back the classic look n' feel of Discord!&ensp;Overrides some CSS and HTML e
 Scrapes YouTube video URLs from [shitpoststatus.com](https://shitpoststatus.com/) and outputs the result as comma-newline separated strings.
 
 ## Soundcloud Track URL Scraper
-Extracts links to track/song titles of the current page.&ensp;Originally used to scrape my likes from https://soundcloud.com/fasteroid-1/likes for use in another script.&ensp;Make sure to scroll through everything you want to capture first.
+Extracts links to track/song titles of the current page.&ensp;Originally used to scrape my likes from [https://soundcloud.com/fasteroid-1/likes](here) for use in another script.&ensp;Make sure to scroll through everything you want to capture first.
 
 ## YouTube Playlist Video URL Scraper
 Extracts links to videos of YouTube playlists.&ensp;Navigate to the first video in a playlist like [this one](https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLFsQleAWXsj_4yDeebiIADdH5FMayBiJo&index=1), scroll through as much as you want to scrape, then run to capture the URLs.
