@@ -8,6 +8,9 @@ Recursively prints all discovered JS values and their types to console.&ensp;Can
 Changes all discovered JS values to different values of the same type from elsewhere on the site.&ensp;The results of this can range from boring to spectacular.&ensp;Strings are currently the most entertaining and safe thing to corrupt.<br>
 <i><b>NOTE:</b>&ensp;Running this can create "bad" cookies that persistently break things.&ensp;Fixing this if it happens requires clearing your cookies.</i>
 
+## DOM Destroyer
+Similar to Chrome Corruptor but exclusively affects DOM properties.&ensp;Safer to run and always produces spectacular results.
+
 ## Chrome Inspector
 Attaches debug events to all discovered JS functions.&ensp;Has support for antispam, path blacklisting, and selective detouring of parts of a website.&ensp;Incredibly powerful for reverse-engineering.
 
