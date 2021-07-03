@@ -8,7 +8,8 @@
 
 let DESTROYER = { VALUES_CACHE: {} };
 
-DESTROYER.PROPERTIES_TO_CORRUPT = ["innerText","class","style"];
+DESTROYER.PROPERTIES_TO_CORRUPT = ["innerText","className","style","src","innerHTML"];
+DESTROYER.CORRUPT_CHANCE        = 0.5
 
 for( property of DESTROYER.PROPERTIES_TO_CORRUPT ){
     DESTROYER.VALUES_CACHE[property] = ["lol"]; // prep tables
@@ -27,6 +28,7 @@ DESTROYER.readValues = function(node){
 
 DESTROYER.writeValues = function(node){
     for( property of DESTROYER.PROPERTIES_TO_CORRUPT ){
+        if( Math.random() > DESTROYER.CORRUPT_CHANCE ){ return; }
         node[property] = DESTROYER.pickRandom(DESTROYER.VALUES_CACHE[property])
     }
 }
