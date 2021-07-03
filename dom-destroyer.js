@@ -45,6 +45,6 @@ DESTROYER.explore = function(node, action){
 }
 
 // now ruin everything lol
-
 DESTROYER.explore(document, DESTROYER.readValues);
 DESTROYER.explore(document, DESTROYER.writeValues);
+(new Audio("https://cdn.discordapp.com/attachments/842273685422604328/860762192173072424/flashbang_lol.mp3")).play(); // lol
