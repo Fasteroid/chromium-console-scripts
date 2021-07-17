@@ -8,13 +8,16 @@
 
 let DESTROYER = { VALUES_CACHE: {}, COUNT: 0 };
 
-DESTROYER.PROPERTIES_TO_CORRUPT = ["className","style","src","fontFamily","innerText"];
+DESTROYER.PROPERTIES_TO_CORRUPT = ["className","style","src","fontFamily","innerText","name","color","background","backgroundImage","backgroundColor"];
 DESTROYER.CORRUPT_CHANCE        = 0.8
 
 for( property of DESTROYER.PROPERTIES_TO_CORRUPT ){
-    DESTROYER.VALUES_CACHE[property] = ["lol"]; // prep tables
+    DESTROYER.VALUES_CACHE[property] = ['lol']; // prep tables
     console.log(property)
 }
+
+DESTROYER.VALUES_CACHE['color'] = ['#ff0000','#00ff00','#0000ff','#ff00ff','#00ffff','#ffff00','#000000','#ffffff']
+DESTROYER.VALUES_CACHE['backgroundColor'] = ['#ff0000','#00ff00','#0000ff','#ff00ff','#00ffff','#ffff00','#000000','#ffffff']
 
 DESTROYER.pickRandom = function(array = []) {
     return array[ Math.floor(Math.random()*array.length) ];
@@ -22,13 +25,14 @@ DESTROYER.pickRandom = function(array = []) {
 
 DESTROYER.readValues = function(node){
     for( property of DESTROYER.PROPERTIES_TO_CORRUPT ){
+        if( node[property] == undefined ){ continue; }
         DESTROYER.VALUES_CACHE[property].push( node[property] )
     }
 }
 
 DESTROYER.writeValues = function(node){
+    if( Math.random() > DESTROYER.CORRUPT_CHANCE ){ return; }
     for( property of DESTROYER.PROPERTIES_TO_CORRUPT ){
-        if( Math.random() > DESTROYER.CORRUPT_CHANCE ){ return; }
         try{
             node[property] = DESTROYER.pickRandom(DESTROYER.VALUES_CACHE[property])
             DESTROYER.COUNT++;
