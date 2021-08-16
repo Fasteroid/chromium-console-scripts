@@ -21,5 +21,5 @@ xml.onload = function() {
     }
     console.log('"'+stuff.join('", \n"')+'"')
 }
-xml.open("GET", "getvideos.php");
+xml.open("GET", "/videos/get");
 xml.send();
