@@ -28,32 +28,21 @@ if( document.styleMods == undefined ){
 document.styleMods.innerText = 
 `
 .theme-dark .wrapper-3WhCwL {
-    border-radius: 3px;
-    padding: 0 2px;
-    font-weight: 500;
-    unicode-bidi: -moz-plaintext;
-    unicode-bidi: plaintext;
     color: #8ea1e1;
     background: rgba(114,137,218,.1);
-    position: relative;
 }
-
 [data-popout-root], html {
     --blurple-original: rgb(114,137,217);
     --brand-experiment: var(--blurple-original);
     --brand-experiment-560: var(--blurple-original);
 }
-
 :root {
     --font-display: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif;
 }
-
 .name-1jkAdW {
     font-size: 16px;
 }
-
 .expandedFolderIconWrapper-Huv7rA svg {
     color: var(--blurple-original) !important;
 }
 `
-
