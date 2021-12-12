@@ -18,4 +18,15 @@ for( child of playlist ){
         n++
     }
 }
+if(stuff.length == 0){
+    n = 0
+    let playlist = document.querySelectorAll(".ytd-playlist-panel-video-renderer");
+    for( child of playlist ){
+        let url = child.href
+        if(url){
+            stuff[n] = url.match(/^(.*?)\&list/)[1]
+            n++
+        }
+    }
+}
 console.log('"'+stuff.join('", \n"')+'"')
