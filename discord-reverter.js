@@ -27,7 +27,7 @@ if( document.styleMods == undefined ){
 
 document.styleMods.innerText = 
 `
-.theme-dark .wrapper-3WhCwL {
+.theme-dark .wrapper-1ZcZW- {
     color: #8ea1e1;
     background: rgba(114,137,218,.1);
 }
