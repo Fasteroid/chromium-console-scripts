@@ -43,8 +43,8 @@
         ':root { --font-display: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
         ':root { --font-primary: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
 
-        // message contents get WhitneyLight
-        '.messageContent-2t3eCI { font-family: WhitneyLight,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
+        // message contents and similar get WhitneyLight
+        '.markup-eYLPri { font-family: WhitneyLight,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
 
         // force the old blurple for folder icons
         '.expandedFolderIconWrapper-Huv7rA svg { color: var(--blurple-original) !important; }\n'
