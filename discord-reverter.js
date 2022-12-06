@@ -44,7 +44,13 @@
         ':root { --font-primary: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
 
         // message contents and similar get WhitneyLight
-        '.markup-eYLPri { font-family: WhitneyLight,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
+        '.markup-eYLPri, .title-338goq, .text-md-semibold-3xVVGu, .reactionCount-26U4As { font-family: WhitneyLight,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
+
+        // mentions need WhitneyHeader
+        '.mention { font-family: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
+
+        // these are too thicc
+        '.reactionCount-26U4As, .text-md-semibold-3xVVGu { font-weight: 400; }\n' +
 
         // force the old blurple for folder icons
         '.expandedFolderIconWrapper-Huv7rA svg { color: var(--blurple-original) !important; }\n'
