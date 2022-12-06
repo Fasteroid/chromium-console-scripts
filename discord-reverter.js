@@ -29,6 +29,9 @@
 
     document.styleMods.innerText = 
 
+        // package the old whitney
+        '@font-face { font-family: "Whitney"; src: url("https://discord.com/assets/3bdef1251a424500c1b3a78dea9b7e57.woff") }' +
+
         // old @mention coloring
         '.theme-dark .wrapper-1ZcZW- { color: #8ea1e1; background: rgba(114,137,218,.1); }\n' + 
 
@@ -38,6 +41,10 @@
         // force headers to whitney
         ':root { --font-display: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
 
+        // force everything else to whitney
+        ':root { --font-primary: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
+
         // force the old blurple for folder icons
         '.expandedFolderIconWrapper-Huv7rA svg { color: var(--blurple-original) !important; }\n'
+        
 }
