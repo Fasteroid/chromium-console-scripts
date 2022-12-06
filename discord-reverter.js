@@ -20,29 +20,24 @@
 }
 
 /* CSS OVERRIDES */
-if( document.styleMods == undefined ){
-    document.styleMods = document.createElement("style")
-    document.head.appendChild(document.styleMods)
-}
+{
+    // if our stylesheet mod doesn't exist, create it
+    if( document.styleMods == undefined ){
+        document.styleMods = document.createElement("style")
+        document.head.appendChild(document.styleMods)
+    }
 
-document.styleMods.innerText = 
-`
-.theme-dark .wrapper-1ZcZW- {
-    color: #8ea1e1;
-    background: rgba(114,137,218,.1);
+    document.styleMods.innerText = 
+
+        // old @mention coloring
+        '.theme-dark .wrapper-1ZcZW- { color: #8ea1e1; background: rgba(114,137,218,.1); }\n' + 
+
+        // force the old blurple in most places
+        '[data-popout-root], html { --blurple-original: rgb(114,137,217); --brand-experiment: var(--blurple-original); --brand-experiment-560: var(--blurple-original); }\n' + 
+
+        // force headers to whitney
+        ':root { --font-display: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
+
+        // force the old blurple for folder icons
+        '.expandedFolderIconWrapper-Huv7rA svg { color: var(--blurple-original) !important; }\n'
 }
-[data-popout-root], html {
-    --blurple-original: rgb(114,137,217);
-    --brand-experiment: var(--blurple-original);
-    --brand-experiment-560: var(--blurple-original);
-}
-:root {
-    --font-display: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif;
-}
-.name-1jkAdW {
-    font-size: 16px;
-}
-.expandedFolderIconWrapper-Huv7rA svg {
-    color: var(--blurple-original) !important;
-}
-`
