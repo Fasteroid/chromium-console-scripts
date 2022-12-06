@@ -30,7 +30,7 @@
     document.styleMods.innerText = 
 
         // package the old whitney
-        '@font-face { font-family: "Whitney"; src: url("https://discord.com/assets/3bdef1251a424500c1b3a78dea9b7e57.woff") }' +
+        '@font-face { font-family: "Whitney"; src: url("https://discord.com/assets/e8acd7d9bf6207f99350ca9f9e23b168.woff") }' +
 
         // old @mention coloring
         '.theme-dark .wrapper-1ZcZW- { color: #8ea1e1; background: rgba(114,137,218,.1); }\n' + 
