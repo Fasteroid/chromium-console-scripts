@@ -29,8 +29,9 @@
 
     document.styleMods.innerText = 
 
-        // package the old whitney
-        '@font-face { font-family: "Whitney"; src: url("https://discord.com/assets/e8acd7d9bf6207f99350ca9f9e23b168.woff") }' +
+        // package the old Whitney variants
+        '@font-face { font-family: "WhitneyLight"; src: url("https://discord.com/assets/e8acd7d9bf6207f99350ca9f9e23b168.woff") }' +
+        '@font-face { font-family: "WhitneyHeader"; src: url("https://discord.com/assets/3bdef1251a424500c1b3a78dea9b7e57.woff") }' +
 
         // old @mention coloring
         '.theme-dark .wrapper-1ZcZW- { color: #8ea1e1; background: rgba(114,137,218,.1); }\n' + 
@@ -38,13 +39,14 @@
         // force the old blurple in most places
         '[data-popout-root], html { --blurple-original: rgb(114,137,217); --brand-experiment: var(--blurple-original); --brand-experiment-560: var(--blurple-original); }\n' + 
 
-        // force headers to whitney
-        ':root { --font-display: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
+        // force all to WhitneyHeader by default
+        ':root { --font-display: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
+        ':root { --font-primary: WhitneyHeader,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
 
-        // force everything else to whitney
-        ':root { --font-primary: Whitney,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' + 
+        // message contents get WhitneyLight
+        '.messageContent-2t3eCI { font-family: WhitneyLight,"Helvetica Neue",Helvetica,Arial,sans-serif }\n' +
 
         // force the old blurple for folder icons
         '.expandedFolderIconWrapper-Huv7rA svg { color: var(--blurple-original) !important; }\n'
-        
+
 }
