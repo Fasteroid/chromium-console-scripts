@@ -31,3 +31,6 @@ Extracts links to track/song titles of the current page.&ensp;Originally used to
 
 ## YouTube Playlist Video URL Scraper
 Extracts links to videos of YouTube playlists.&ensp;Navigate to the first video in a playlist like [this one](https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLFsQleAWXsj_4yDeebiIADdH5FMayBiJo&index=1), scroll through as much as you want to scrape, then run to capture the URLs.
+
+## ☐.js
+☐⁢⁤⁢⁢⁢⁤⁢⁤☐⁢⁤⁤⁢⁤⁤⁤⁢☐⁢⁤⁤⁢⁢⁢⁤⁤☐⁢⁤⁤⁢⁤⁤⁤⁤☐⁢⁤⁤⁢⁢⁤⁢⁢☐⁢⁤⁤⁢⁢⁤⁢⁤☐⁢⁤⁤⁤⁢⁢⁤⁤ ☐⁢⁤⁤⁢⁤⁢⁢⁤☐⁢⁤⁤⁢⁤⁤⁤⁢☐⁢⁤⁤⁤⁢⁤⁢⁢☐⁢⁤⁤⁢⁤⁤⁤⁤ ☐⁢⁤⁤⁢⁢⁢⁤⁤☐⁢⁤⁤⁤⁢⁢⁤⁢☐⁢⁤⁤⁤⁤⁢⁢⁤☐⁢⁤⁤⁤⁢⁢⁢⁢☐⁢⁤⁤⁤⁢⁤⁢⁢☐⁢⁤⁤⁢⁤⁢⁢⁤☐⁢⁤⁤⁢⁢⁢⁤⁤ ☐⁢⁤⁤⁢⁢⁢⁤⁢☐⁢⁤⁤⁢⁤⁤⁤⁤☐⁢⁤⁤⁤⁤⁢⁢⁢☐⁢⁤⁤⁢⁢⁤⁢⁤☐⁢⁤⁤⁤⁢⁢⁤⁤, ☐⁢⁤⁤⁢⁤⁤⁢⁢☐⁢⁤⁤⁢⁤⁢⁢⁤☐⁢⁤⁤⁢⁤⁢⁤⁤☐⁢⁤⁤⁢⁢⁤⁢⁤ ☐⁢⁤⁤⁤⁢⁤⁢⁢☐⁢⁤⁤⁢⁤⁢⁢⁢☐⁢⁤⁤⁢⁢⁤⁢⁤ ☐⁢⁤⁤⁢⁢⁤⁢⁤☐⁢⁤⁤⁤⁤⁢⁢⁢☐⁢⁤⁤⁢⁢⁤⁢⁤☐⁢⁤⁤⁤⁢⁢⁤⁢☐⁢⁤⁤⁤⁢⁢⁢⁢☐⁢⁤⁤⁤⁢⁤⁢⁢☐⁢⁤⁤⁤⁢⁢⁤⁤ ☐⁢⁤⁤⁢⁢⁤⁤⁢☐⁢⁤⁤⁤⁢⁢⁤⁢☐⁢⁤⁤⁢⁤⁤⁤⁤☐⁢⁤⁤⁢⁤⁤⁢⁤ [☐⁢⁤⁤⁤⁢⁤⁢⁢☐⁢⁤⁤⁢⁤⁢⁢⁢☐⁢⁤⁤⁢⁢⁤⁢⁤ ☐⁢⁤⁢⁢⁤⁤⁢⁢☐⁢⁤⁤⁢⁤⁤⁤⁤☐⁢⁤⁤⁤⁢⁢⁤⁤☐⁢⁤⁤⁤⁢⁤⁢⁢ ☐⁢⁤⁢⁢⁤⁤⁢⁢☐⁢⁤⁤⁢⁤⁢⁢⁤☐⁢⁤⁤⁢⁢⁢⁤⁢☐⁢⁤⁤⁤⁢⁢⁤⁢☐⁢⁤⁤⁢⁢⁢⁢⁤☐⁢⁤⁤⁤⁢⁢⁤⁢☐⁢⁤⁤⁤⁤⁢⁢⁤ ☐⁢⁤⁤⁢⁤⁢⁢⁤☐⁢⁤⁤⁢⁤⁤⁤⁢ ☐⁢⁤⁢⁢⁤⁤⁤⁤☐⁢⁤⁢⁢⁤⁤⁢⁤☐⁢⁤⁢⁢⁤⁤⁤⁤☐⁢⁤⁢⁤⁢⁢⁤⁢☐⁢⁤⁢⁢⁤⁢⁢⁤](https://youtu.be/4GvsYk5rLGk?t=369).
