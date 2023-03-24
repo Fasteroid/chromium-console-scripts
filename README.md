@@ -4,10 +4,6 @@ This is my slowly-growing collection of self-written chromium console witchcraft
 ## Chrome Dumper
 Recursively prints all discovered JS values and their types to console.&ensp;Can be memory intensive and may crash chrome console on larger websites when using high recursion depth.&ensp;Object paths can be blacklisted if necessary.
 
-## Chrome Corruptor
-Changes all discovered JS values to different values of the same type from elsewhere on the site.&ensp;The results of this can range from boring to spectacular.&ensp;Strings are currently the most entertaining and safe thing to corrupt.<br>
-<i><b>NOTE:</b>&ensp;Running this can create "bad" cookies that persistently break things.&ensp;Fixing this if it happens requires clearing your cookies.</i>
-
 ## Chrome DOM Destroyer
 Similar to Chrome Corruptor but exclusively corrupts DOM properties.&ensp;Safer to run and always produces spectacular results.
 
