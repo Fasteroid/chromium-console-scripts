@@ -4,21 +4,17 @@ const TRAINING_DATA = "Crazy? I was crazy once. They locked me in a room. A rubb
 let processedData = TRAINING_DATA.toLowerCase().split(" ")
 let markov = {}
 
-function getVar(str){
+function dePunct(str){
     return str.replace(/[^a-z]/gm,"")
 }
 
 for (let i = 1; i < processedData.length; i++) {
-    const pre = processedData[i-1]
-    const pre_var = getVar(pre)
+    const pre_words = [processedData[i-1], dePunct(processedData[i-1])]
     const post = processedData[i]
-    const post_var = getVar(post)
-    markov[pre] = markov[pre] || []
-    markov[pre_var] = markov[pre_var] || []
-    markov[pre].push(post)
-    markov[pre_var].push(post)
-    markov[pre].push(post_var)
-    markov[pre_var].push(post_var)
+    for(let pre of pre_words){
+        markov[pre] = markov[pre] || []
+        markov[pre].push(post)
+    }
 }
 
 function pickRandom(array = []) {
@@ -27,7 +23,7 @@ function pickRandom(array = []) {
 
 function generate(words, depth){
     const next = words[words.length - 1]
-    const pool = markov[next]
+    const pool = markov[dePunct(next)]
 
     if(!pool) {
         words.pop()
