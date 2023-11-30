@@ -33,7 +33,7 @@ function generate(words, depth){
         )
     }
 
-    if(depth > 128) return words;
+    if(depth > 256) return words;
     return generate(
         [...words, pickRandom(pool)],
         depth + 1
@@ -41,4 +41,10 @@ function generate(words, depth){
 }
 
 const crazy = generate(["crazy?"],0)
+for (let i = 1; i < crazy.length; i++) {
+    const prev = crazy[i-1];
+    if(prev.match(/[^a-zA-Z]/gm)){
+        crazy[i] = crazy[i][0].toUpperCase() + crazy[i].substring(1)
+    }
+}
 console.log(crazy.join(" "))
