@@ -123,8 +123,8 @@ searcher.recurse = function(obj, path, depth=0, refs=new WeakSet(), funcs=[]) {
         try{
 
             let value = obj[key]; // if we hit a css sheet this will throw an exception
-            if( value === null ){ continue; } // skip null
-            if( value.window ){ continue; } // no.
+            if( value === null || value === undefined ){ continue; } // skip null
+            if( value && value.window == window ){ continue; } // no.
             let type = typeof(value);
             let newpath = searcher.getPath(path,key);
             if( searcher.isBanned(newpath) ){ 
@@ -145,9 +145,6 @@ searcher.recurse = function(obj, path, depth=0, refs=new WeakSet(), funcs=[]) {
                 case 'object':
                     if( searcher.includesPartial(searcher.SEARCH_KEYS,key) ){
                         searcher.advLog(value, newpath)
-                        if(code){
-                            funcs.push(value);
-                        }
                         continue bruh;
                     }
                     searcher.recurse(value, newpath, depth+1, refs, funcs);          
