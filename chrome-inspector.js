@@ -268,7 +268,7 @@ inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
 
     if( inspector.DETOUR_PROTOTYPES ){
         try {
-            inspector.recurse(Object.getPrototypeOf(obj),`Object.getProtoTypeOf(${path})`,depth+1, refs);
+            inspector.recurse(Object.getPrototypeOf(obj),`Object.getPrototypeOf(${path})`,depth+1, refs);
         }
         catch(e){}
     }
@@ -321,6 +321,6 @@ inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
 };
 console.groupCollapsed("Detours...");
 inspector.recurse(window, "window");
-inspector.LIST_DETOURED = false; // will spam console if left on while detouring function args
+inspector.LIST_DETOURED = false;
 console.groupEnd();
 console.log(`${inspector.detourcount} total functions detoured.`);
