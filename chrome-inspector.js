@@ -235,7 +235,7 @@ inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
     let group = (depth > 0) && inspector.LIST_DETOURED;
     let parent_type = typeof(obj);
 
-    for (const key in obj) {
+    for (const key of Object.getOwnPropertyNames(obj)) {
         try{
             let value = obj[key]; // if we hit a css sheet this will throw an exception
             if( value == window ){ continue; }
