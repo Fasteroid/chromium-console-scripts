@@ -2,15 +2,21 @@
 *  Fast's JS Function Call Inspector: *
 *       Chrome Console Edition        *
 **************************************/
-var inspector = { 
-    detours: new WeakMap(), 
-    spamcounter: 0, 
-    isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
-    isBanned: (key) => key == "window.inspector" || key=="window.performance" || inspector.BANNED_PATHS.includes(key) || inspector.includesPartial(inspector.BANNED_PATHS,key), // pls don't remove hardcoded values from here
-    isNative: (func) => (func+"").endsWith("{ [native code] }"),
-    antispam: () => { inspector.spamcounter = 0; setTimeout(inspector.antispam,inspector.ANTISPAM_INTERVAL); },
-    ttime: 0
-};
+
+
+var inspector = (() => { 
+    const oldSetTimeout = window.setTimeout; // save the original setTimeout so antispam calling it doesn't show up in logs
+    return {
+        detours: new WeakMap(), 
+        detourcount: 0,
+        spamcounter: 0, 
+        isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
+        isBanned: (key) => key == "window.inspector" || key=="window.performance" || inspector.BANNED_PATHS.includes(key) || inspector.includesPartial(inspector.BANNED_PATHS,key), // pls don't remove hardcoded values from here
+        isNative: (func) => (func+"").endsWith("{ [native code] }"),
+        antispam: () => { inspector.spamcounter = 0; oldSetTimeout(inspector.antispam,inspector.ANTISPAM_INTERVAL); },
+        ttime: 0
+    }
+})();
 
 /*  HOW TO USE:
     Paste in chrome console and hit enter.  Click on debug log events to expand them.  
@@ -19,21 +25,27 @@ var inspector = {
     Add any problematic functions or objects to BANNED_PATHS to ban traversing them.  
 */
 
-inspector.MAX_SEARCH_DEPTH   = 15;             // Max recursive depth to search.
-inspector.MAX_SEARCH_WIDTH   = 100;            // Any object besides window with more objects stored under it than this will be ignored.
-inspector.DETOUR_METAMETHODS = true;          // Look for functions stored under functions and detour those too!
+inspector.MAX_SEARCH_DEPTH   = 15;            // Max recursive depth to search.
+inspector.MAX_SEARCH_WIDTH   = 100;           // Any object besides window with more objects stored under it than this will be ignored.
 inspector.ANTISPAM_INTERVAL  = 1000;          // in ms
 inspector.ANTISPAM_QUOTA     = 64;            // max logs per interval
 inspector.LIST_GROUPING_MODE = console.group; // or console.groupCollapsed
 inspector.LIST_DETOURED      = true;          // list attempted detours
 inspector.LIST_SUCCESS_ONLY  = true;          // only list successful detours
-inspector.MIN_CPU_TO_LOG     = 5;            // don't log any calls that take less than this
-inspector.DETOUR_NATIVE      = true;         
+inspector.MIN_CPU_TO_LOG     = 5;             // don't log any calls that take less than this
+
+inspector.DETOUR_NATIVE      = true;          // detours native functions like setTimeout
+
+inspector.DETOUR_PROTOTYPES  = true;          // if true, recursively explore prototypes and detour everything applicable that's found!
+
+inspector.DETOUR_ARGS        = false;          // function called with detourable arguments?  detour those too!
+if( inspector.DETOUR_ARGS ){ console.warn("Function argument detouring enabled.  This will incur a severe performance hit."); }
+
 
 // Something specific spamming console?  Completely breaking the website?  Add it here.  Supports both full paths and substrings of paths.
 // Feel free to make a PR if you find something nasty I haven't added yet.
 inspector.BANNED_PATHS = [
-    "window.document","frameElement","webpackJsonp","cssRules","document",".apply","onTick","shouldRunAtMaxSpeed","React","timedOut"
+    "frameElement","webpackJsonp","cssRules",".apply","onTick","shouldRunAtMaxSpeed","React","timedOut"
 ]; 
 
 inspector.COLORS = {  // inspired by Wiremod's Expression 2 Language in Garry's Mod
@@ -193,16 +205,34 @@ inspector.detour = function(obj,key,path="unknown") {
             old      : func,
             ctime    : 0,
         }
-        metadata.detoured = {[func_name]: (function() { /* DETOUR */
-            let finish, start = performance.now()
-            result = func.apply(this,arguments);
-            finish = performance.now();
-            metadata.ctime = (finish-start)*1000;
-            inspector.handleLogging(metadata,arguments,result);
-            if( result != undefined ){
-                return result; 
-            }
-        })}[func_name];
+
+        if( inspector.DETOUR_ARGS ){
+            metadata.detoured = {[func_name]: (function() { /* DETOUR */
+                try{ inspector.recurse(arguments, `${path}(...)`) }
+                catch(e){}
+
+                let finish, start = performance.now()
+                result = func.apply(this,arguments);
+                finish = performance.now();
+                metadata.ctime = (finish-start)*1000;
+                inspector.handleLogging(metadata,arguments,result);
+                if( result != undefined ){
+                    return result; 
+                }
+            })}[func_name];
+        }
+        else { // avoid the overhead of detouring args if we don't need them
+            metadata.detoured = {[func_name]: (function() { /* DETOUR */
+                let finish, start = performance.now()
+                result = func.apply(this,arguments);
+                finish = performance.now();
+                metadata.ctime = (finish-start)*1000;
+                inspector.handleLogging(metadata,arguments,result);
+                if( result != undefined ){
+                    return result; 
+                }
+            })}[func_name];
+        }
 
         metadata.detoured.toString = function(){ // really epic toString override
             return func.toString();
@@ -226,18 +256,26 @@ inspector.detour = function(obj,key,path="unknown") {
 
 inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {    
 
+    if( obj == null || obj == undefined ){ return; }
     if( depth > inspector.MAX_SEARCH_DEPTH ){ return; }
 
     // Avoid infinite recursion
-    if(refs.has(obj)){ return; }
-    else if( obj!=null ){ refs.add(obj); }
+    if( refs.has(obj) ) return;
+    else                refs.add(obj);
 
     let group = (depth > 0) && inspector.LIST_DETOURED;
     let parent_type = typeof(obj);
 
+    if( inspector.DETOUR_PROTOTYPES ){
+        try {
+            inspector.recurse(Object.getPrototypeOf(obj),`Object.getProtoTypeOf(${path})`,depth+1, refs);
+        }
+        catch(e){}
+    }
+
     for (const key in obj) {
         try{
-            let value = obj[key]; // if we hit a css sheet this will throw an exception
+            let value = obj[key]; // this may throw illegalinvocation
             if( value == window ){ continue; }
 
             // dodge javascript frameworks and libraries
@@ -261,7 +299,6 @@ inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
             switch(type){
                 case 'function':
                     doDetour = true;
-                    if( !inspector.DETOUR_METAMETHODS ){ break; }
                     if( inspector.getOld(value)!=value ){ continue; } // don't detour stuff multiple times!!
                     if( group ){ group = false; inspector.LIST_GROUPING_MODE(`%c${path} (${parent_type})`,inspector.COLORS[parent_type]); }
                 case 'object':
@@ -272,17 +309,18 @@ inspector.recurse = function(obj, path, depth=0, refs=new WeakSet()) {
             if(doDetour){
                 let success = inspector.detour(obj,key,newpath); // this has to be here due to recursion order 
                 inspector.logDetoured(newpath,success,obj);
+                if( success === true ){ inspector.detourcount++; }
             }
         }
-        catch(e){
-            console.error(e);
-        }
+        catch(e){}
     }
     if( !group ){
         console.groupEnd();
     }
 
 };
-console.groupCollapsed("Detours");
+console.groupCollapsed("Detours...");
 inspector.recurse(window, "window");
+inspector.LIST_DETOURED = false; // will spam console if left on while detouring function args
 console.groupEnd();
+console.log(`${inspector.detourcount} total functions detoured.`);
