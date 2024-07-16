@@ -7,6 +7,7 @@ const INSPECTOR3 = {
 
     BLACKLIST: [
         ...Object.values(console),
+        performance, Performance, 
         Object, Reflect, Function, Symbol, // TODO: finer-grained control; some methods on these are probably okay to detour
     ],
 
@@ -26,6 +27,12 @@ const INSPECTOR3 = {
             getPrototypeOf: function(target){
                 return wrappedProto;
             },
+
+            setPrototypeOf: function(target, prototype){
+                console.log(target, prototype)
+                wrappedProto = prototype ? INSPECTOR3.proxyWrap( prototype ) : prototype;
+                return true;
+            },
     
             get(target, prop, receiver) {
                 if (prop === INSPECTOR3.ORIGINAL){
@@ -43,9 +50,9 @@ const INSPECTOR3 = {
             },
     
             apply: function(target, thisArg, argumentsList){
-                let start  = INSPECTOR3.getOriginalMethod(performance,"now")();
+                let start  = performance.now();
                     let result = target.apply(thisArg, argumentsList);
-                let end    = INSPECTOR3.getOriginalMethod(performance,"now")();
+                let end    = performance.now();
     
                 console.log(target.name, end - start, result);
                 
@@ -53,9 +60,9 @@ const INSPECTOR3 = {
             },
 
             construct: function(target, argumentsList, newTarget){
-                let start  = INSPECTOR3.getOriginalMethod(performance,"now")();
+                let start  = performance.now();
                     let result = new target(...argumentsList);
-                let end    = INSPECTOR3.getOriginalMethod(performance,"now")();
+                let end    = performance.now();
     
                 console.log("construct " + target.name, end - start, result);
     
