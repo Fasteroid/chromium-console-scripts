@@ -1,33 +1,40 @@
 
 
 
-const SAFESPACE = {
+const INSPECTOR3 = {
+
     ORIGINAL: Symbol('original'),
+
+    BLACKLIST: [
+        ...Object.values(console),
+        Object, Reflect, Function, Symbol, // TODO: finer-grained control; some methods on these are probably okay to detour
+    ],
+
     getOriginal(obj){
-        return obj[SAFESPACE.ORIGINAL] ?? obj;
+        return obj[INSPECTOR3.ORIGINAL] ?? obj;
     },
     getOriginalMethod(obj, prop){
-        return SAFESPACE.getOriginal(obj[prop]).bind(SAFESPACE.getOriginal(obj));
+        return INSPECTOR3.getOriginal(obj[prop]).bind(INSPECTOR3.getOriginal(obj));
     },
+
     proxyWrap(obj) {
         let wrappedProto = Object.getPrototypeOf(obj);
-            wrappedProto = wrappedProto ? SAFESPACE.proxyWrap( wrappedProto ) : wrappedProto;
+            wrappedProto = wrappedProto ? INSPECTOR3.proxyWrap( wrappedProto ) : wrappedProto;
     
-        return new Proxy(obj, {
+        return new (INSPECTOR3.getOriginal(Proxy))(obj, {
             
             getPrototypeOf: function(target){
                 return wrappedProto;
             },
     
             get(target, prop, receiver) {
-                if (prop === SAFESPACE.ORIGINAL){
+                if (prop === INSPECTOR3.ORIGINAL){
                     return target;
                 }
                     
-                const value = SAFESPACE.getOriginalMethod(Reflect,"get")(target, prop, receiver);
+                const value = INSPECTOR3.getOriginalMethod(Reflect,"get")(target, prop, receiver);
     
                 if (typeof value === 'function') {
-                    // SAFESPACE.getOriginalMethod(console,"log")("value.apply:", value.apply)
                     return function (...args) {
                         return value.apply(target, args);
                     };
@@ -36,28 +43,39 @@ const SAFESPACE = {
             },
     
             apply: function(target, thisArg, argumentsList){
-                let start  = SAFESPACE.getOriginalMethod(performance,"now")();
-                    SAFESPACE.getOriginalMethod(console,"log")("target.apply:", target.apply)
+                let start  = INSPECTOR3.getOriginalMethod(performance,"now")();
                     let result = target.apply(thisArg, argumentsList);
-                let end    = SAFESPACE.getOriginalMethod(performance,"now")();
+                let end    = INSPECTOR3.getOriginalMethod(performance,"now")();
     
-                SAFESPACE.getOriginalMethod(console,"log")(target.name, end - start, result);
+                console.log(target.name, end - start, result);
                 
                 return result;
             },
+
+            construct: function(target, argumentsList, newTarget){
+                let start  = INSPECTOR3.getOriginalMethod(performance,"now")();
+                    let result = new target(...argumentsList);
+                let end    = INSPECTOR3.getOriginalMethod(performance,"now")();
+    
+                console.log("construct " + target.name, end - start, result);
+    
+                return result;
+            }
     
         });
     },
+
     getPath(path, key){
         return (typeof key === 'symbol') ? 
             `${path}[${key.toString()}]`
             : key.toString().match(/[^(a-z|$|_|A-Z)]/) ? 
             `${path}[\`${key.toString()}\`]` // evil string key or some other bullshit
-            : `${path}.${key}`;   // normal key
+            : `${path}.${key}`;              // normal key
     }
+    
 }
 
-function recurTraverse(obj, path = "somewhere", everything = new Set([Proxy, Object, Reflect, Function, Symbol, SAFESPACE, console]), prototypes = new Set() ){
+function recurTraverse(obj, path = "somewhere", everything = new Set([INSPECTOR3, ...INSPECTOR3.BLACKLIST]), prototypes = new Set() ){
     for( let key of [...Object.getOwnPropertySymbols(obj), ...Object.getOwnPropertyNames(obj)] ){
 
             try {
@@ -68,15 +86,14 @@ function recurTraverse(obj, path = "somewhere", everything = new Set([Proxy, Obj
             }
 
             const victim = obj[key];
-            if( SAFESPACE.getOriginalMethod(everything, "has")(victim) ) continue;
+            if( INSPECTOR3.getOriginalMethod(everything, "has")(victim) ) continue;
             if( !(victim instanceof Object) ) continue;
 
-            const nestedpath = SAFESPACE.getPath(path, key)
-            SAFESPACE.getOriginalMethod(console, "log")(nestedpath)
+            const nestedpath = INSPECTOR3.getPath(path, key)
 
-            const prox = SAFESPACE.proxyWrap(victim);
-            SAFESPACE.getOriginalMethod(everything,"add")(prox);
-            SAFESPACE.getOriginalMethod(everything,"add")(victim);
+            const prox = INSPECTOR3.proxyWrap(victim);
+            INSPECTOR3.getOriginalMethod(everything,"add")(prox);
+            INSPECTOR3.getOriginalMethod(everything,"add")(victim);
 
             obj[key] = prox;
 
