@@ -39,7 +39,7 @@ const INSPECTOR3 = {
                     return target;
                 }
                     
-                const value = INSPECTOR3.getOriginalMethod(Reflect,"get")(target, prop, receiver);
+                const value = Reflect.get(target, prop, receiver);
     
                 if (typeof value === 'function') {
                     return function (...args) {
@@ -84,29 +84,26 @@ const INSPECTOR3 = {
 
 function recurTraverse(obj, path = "somewhere", everything = new Set([INSPECTOR3, ...INSPECTOR3.BLACKLIST]), prototypes = new Set() ){
     for( let key of [...Object.getOwnPropertySymbols(obj), ...Object.getOwnPropertyNames(obj)] ){
+        try {
+            obj[key];
+        }
+        catch(e){
+            continue;
+        }
 
-            try {
-                obj[key];
-            }
-            catch(e){
-                continue;
-            }
+        const victim = obj[key];
+        if( INSPECTOR3.getOriginalMethod(everything, "has")(victim) ) continue;
+        if( !(victim instanceof Object) ) continue;
 
-            const victim = obj[key];
-            if( INSPECTOR3.getOriginalMethod(everything, "has")(victim) ) continue;
-            if( !(victim instanceof Object) ) continue;
+        const nestedpath = INSPECTOR3.getPath(path, key)
 
-            const nestedpath = INSPECTOR3.getPath(path, key)
+        const prox = INSPECTOR3.proxyWrap(victim);
+        INSPECTOR3.getOriginalMethod(everything,"add")(prox);
+        INSPECTOR3.getOriginalMethod(everything,"add")(victim);
 
-            const prox = INSPECTOR3.proxyWrap(victim);
-            INSPECTOR3.getOriginalMethod(everything,"add")(prox);
-            INSPECTOR3.getOriginalMethod(everything,"add")(victim);
+        obj[key] = prox;
 
-            obj[key] = prox;
-
-            recurTraverse(victim, nestedpath, everything, prototypes);
-
-
+        recurTraverse(victim, nestedpath, everything, prototypes);
     }
 
     return [prototypes, everything]
