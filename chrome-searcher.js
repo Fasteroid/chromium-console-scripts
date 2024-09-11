@@ -12,7 +12,7 @@ const SEARCHER = {
     isCursedKey: (key) => key.match(/[^(a-z|$|_|A-Z)]/), 
     justify:     (string,value) => (string + "\t".repeat(Math.max(0,Math.ceil((value-string.length)/4)))),
 
-    isBanned(key){ return key == "window.SEARCHER" || this.includesPartial(this.BANNED_KEYS,key) }, // pls don't remove hardcoded values from here
+    isBanned(key){ return key == "window.SEARCHER" || this.includesPartial(this.BANNED_KEYS, key) }, // pls don't remove hardcoded values from here
 
     COLORS: {  
         // inspired by Wiremod's Expression 2 Language in Garry's Mod
@@ -51,7 +51,7 @@ const SEARCHER = {
         try {
             const lowerKeywords = keywords.map( s => s.toLowerCase() );
             let lowerString = this.advToString(string)[1];
-            lowerString = lowerString+"";
+            lowerString = (lowerString+"").toLowerCase();
             for( let lowerKeyword of lowerKeywords ){
                 if( lowerString.includes(lowerKeyword) ){ return true; }
             }
@@ -118,54 +118,54 @@ const SEARCHER = {
 
         if( depth === 0 ) console.log("Just a sec...");
     
-        // Avoid infinite recursion
-        if( refs.has(obj) ){ return; }
-        else if( obj !== null ){ refs.add(obj); }
-
-        let width = 0
+        try {
+            // Avoid infinite recursion
+            if( refs.has(obj) ){ return; }
+            else if( obj !== null ){ refs.add(obj); }
     
-        bruh: for (const key in obj) {
+            bruh: for (const key in obj) {
 
-            if( width++ > MAX_SEARCH_WIDTH ){ 
-                console.warn("Search width bailout: ", path);
-                break;
-            }
+                let value = obj[key]; // if we hit a css sheet this will throw an exception
+                if( value === null || value === undefined ){ continue; } // skip null
+                if( value && value.window == window ){ continue; } // no.
+                let type = typeof(value);
+                let newpath = this.getPath(path, key);
+                if( this.isBanned(newpath) ){ 
+                    continue bruh; 
+                }
 
-            let value = obj[key]; // if we hit a css sheet this will throw an exception
-            if( value === null || value === undefined ){ continue; } // skip null
-            if( value && value.window == window ){ continue; } // no.
-            let type = typeof(value);
-            let newpath = this.getPath(path, key);
-            if( this.isBanned(newpath) ){ 
-                continue bruh; 
-            }
+                switch(type){
+                    case 'function':
+                        let code = (value+"")
+                        if( this.includesPartial(SEARCH_KEYS, code) ){
+                            this.advLog(value, newpath, stuff)
+                        }
+                        this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);
+                    break;
+                    case 'object':
+                        if( this.includesPartial(SEARCH_KEYS, value.constructor?.name ?? "") ){
+                            this.advLog(value, newpath, stuff)
+                        }
+                        this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);          
+                    break;
+                }
 
-            switch(type){
-                case 'function':
-                    let code = (value+"")
-                    if( this.includesPartial(SEARCH_KEYS, code) ){
-                        this.advLog(value, newpath, stuff)
-                    }
-                case 'object':
-                    if( this.includesPartial(SEARCH_KEYS, value.constructor.name) ){
-                        this.advLog(value, newpath, stuff)
-                    }
-                    this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);          
-                break;
-            }
+                if( this.includesPartial(SEARCH_KEYS, key) ){
+                    this.advLog(value, newpath, stuff)
+                    continue bruh;
+                }
+                
+                let text = this.advToString(value)
+                if( this.includesPartial(SEARCH_KEYS, text) ){
+                    this.advLog(value, newpath, stuff)
+                    continue bruh;
+                }
+        
 
-            if( this.includesPartial(SEARCH_KEYS, key) ){
-                this.advLog(value, newpath, stuff)
-                continue bruh;
             }
-            
-            let text = this.advToString(value)
-            if( this.includesPartial(SEARCH_KEYS, text) ){
-                this.advLog(value, newpath, stuff)
-                continue bruh;
-            }
-    
-
+        }
+        catch(e){
+            console.error(e);
         }
 
         if( depth === 0 ) console.log(`Search done, found ${stuff.length} results.`);
