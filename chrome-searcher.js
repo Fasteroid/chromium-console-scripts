@@ -89,7 +89,7 @@ const SEARCHER = {
                         type = "array";
                     }
                     else {
-                        value = thing + ""; break;
+                        value = `[Object ${(thing.constructor?.name ?? "Object")}]`;
                     }
                 break;
                 default: value = thing + ""; break;
