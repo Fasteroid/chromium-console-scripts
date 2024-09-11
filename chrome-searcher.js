@@ -43,36 +43,6 @@ const SEARCHER = {
     },
 
     /**
-     * better toString that actually tells you what it is specifically if it's not a string
-     * @param {Object} thing
-     * @returns {String}
-     */
-    advToString(thing){
-        let type = typeof(thing);
-        let value = "failed..."
-        try{
-            switch(type){
-                case 'symbol': value = thing.description; break; // ugh
-                case 'string': value = `"${thing}"`; break;
-                case 'function': 
-                    value = (thing + "").match(/(function\s*)([^\)]*\(.+)/); 
-                    if(value){ value = value[2] }
-                    break;
-                case 'object':
-                    value = thing + ""
-                    if(!value.startsWith("[")){
-                        value = `[...]`
-                        type = "array";
-                    }
-                break;
-                default: value = thing + "";
-            }
-        }
-        finally{}
-        return value;
-    },
-
-    /**
      * @param {String} keywords - search keywords
      * @param {Object} string  - victim
      * @returns {boolean} did any keyword match?
@@ -80,7 +50,7 @@ const SEARCHER = {
     includesPartial(keywords, string){
         try {
             const lowerKeywords = keywords.map( s => s.toLowerCase() );
-            let lowerString = this.advToString(string);
+            let lowerString = this.advToString(string)[1];
             lowerString = lowerString+"";
             for( let lowerKeyword of lowerKeywords ){
                 if( lowerString.includes(lowerKeyword) ){ return true; }
@@ -94,90 +64,111 @@ const SEARCHER = {
         return false;
     },
 
+    functionRegex: /function(\(.*\)\s*{.*})/gms,
+
+    /**
+     * better toString that actually tells you what it is specifically if it's not a string
+     * @param {Object} thing
+     * @returns {String}
+     */
+    advToString(thing){
+        let type = typeof(thing);
+        let value = "failed..."
+        try{
+            switch(type){
+                case 'symbol': value = thing.description; break; // ugh
+                case 'string': value = `"${thing}"`; break;
+                case 'function': 
+                    let temp = this.functionRegex.exec(thing + "");
+                    if( temp ){ value = temp[1] }
+                    else { value = thing + ""; }
+                    break;
+                case 'object':
+                    if( thing instanceof Array ){
+                        value = `[...]`
+                        type = "array";
+                    }
+                    else {
+                        value = thing + ""; break;
+                    }
+                break;
+                default: value = thing + ""; break;
+            }
+        }
+        catch(e){
+
+        }
+        return [type, value];
+    },
+
     /**
      * prints a thing at a path to console
      * @param {Object} thing
      * @param {String} path
      */
     advLog(thing, path, stuff=[]){
-        let id = stuff.push(thing);
-
-        let type = typeof(thing);
-        let value = "failed..."
-        try{
-            switch(type){
-                case 'symbol': value = thing.valueOf(); break; // ugh
-                case 'string': value = `"${thing}"`; break;
-                case 'function': 
-                    value = (thing + "").match(/(function\s*)([^\)]*\(.+)/); 
-                    if(value){ value = value[2] }
-                    break;
-                case 'object':
-                    value = thing + ""
-                    if(!value.startsWith("[")){
-                        value = `[...]`
-                        type = "array";
-                    }
-                break;
-                default: value = thing + "";
-            }
-        }
-        finally{}
-        if(path){
-            console.log( `(${id}) ${path} = %c${type} %c${value}`, "color: #ff944d;", this.COLORS[type] )
-        }
+        let id = stuff.push(thing) - 1;
+        let [type, value] = this.advToString(thing);
+        console.log( `(${id}) ${path} = %c${type} %c${value}`, "color: #ff944d;", this.COLORS[type] )
     },
 
-    search(obj, SEARCH_KEYS=[], MAX_SEARCH_DEPTH=10, path="", depth=0, refs=new WeakSet(), stuff=[]) {
+    search(obj, SEARCH_KEYS=[], MAX_SEARCH_DEPTH=10, MAX_SEARCH_WIDTH=100, path="", depth=0, refs=new WeakSet(), stuff=[]) {
 
-        if( depth > MAX_SEARCH_DEPTH ){ return; }
+        if( depth >= MAX_SEARCH_DEPTH ){ return; }
+
+        if( depth === 0 ) console.log("Just a sec...");
     
         // Avoid infinite recursion
-        if(refs.has(obj)){ return; }
-        else if( obj!=null ){ refs.add(obj); }
+        if( refs.has(obj) ){ return; }
+        else if( obj !== null ){ refs.add(obj); }
+
+        let width = 0
     
         bruh: for (const key in obj) {
-            try{
-    
-                let value = obj[key]; // if we hit a css sheet this will throw an exception
-                if( value === null || value === undefined ){ continue; } // skip null
-                if( value && value.window == window ){ continue; } // no.
-                let type = typeof(value);
-                let newpath = this.getPath(path, key);
-                if( this.isBanned(newpath) ){ 
-                    continue bruh; 
-                }
-    
-                switch(type){
-                    case 'function':
-                        let code = (value+"")
-                        if( this.includesPartial(SEARCH_KEYS, code) ){
-                            this.advLog(value, newpath, stuff)
-                        }
-                    case 'object':
-                        if( this.includesPartial(SEARCH_KEYS, value.constructor.name) ){
-                            this.advLog(value, newpath, stuff)
-                        }
-                        this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, newpath, depth+1, refs, stuff);          
-                    break;
-                }
-    
-                if( this.includesPartial(SEARCH_KEYS, key) ){
-                    this.advLog(value, newpath, stuff)
-                    continue bruh;
-                }
-                
-                let text = this.advToString(value)
-                if( this.includesPartial(SEARCH_KEYS, text) ){
-                    this.advLog(value, newpath, stuff)
-                    continue bruh;
-                }
-    
+
+            if( width++ > MAX_SEARCH_WIDTH ){ 
+                console.warn("Search width bailout: ", path);
+                break;
             }
-            catch(e){
-                console.error(e);
+
+            let value = obj[key]; // if we hit a css sheet this will throw an exception
+            if( value === null || value === undefined ){ continue; } // skip null
+            if( value && value.window == window ){ continue; } // no.
+            let type = typeof(value);
+            let newpath = this.getPath(path, key);
+            if( this.isBanned(newpath) ){ 
+                continue bruh; 
             }
+
+            switch(type){
+                case 'function':
+                    let code = (value+"")
+                    if( this.includesPartial(SEARCH_KEYS, code) ){
+                        this.advLog(value, newpath, stuff)
+                    }
+                case 'object':
+                    if( this.includesPartial(SEARCH_KEYS, value.constructor.name) ){
+                        this.advLog(value, newpath, stuff)
+                    }
+                    this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);          
+                break;
+            }
+
+            if( this.includesPartial(SEARCH_KEYS, key) ){
+                this.advLog(value, newpath, stuff)
+                continue bruh;
+            }
+            
+            let text = this.advToString(value)
+            if( this.includesPartial(SEARCH_KEYS, text) ){
+                this.advLog(value, newpath, stuff)
+                continue bruh;
+            }
+    
+
         }
+
+        if( depth === 0 ) console.log(`Search done, found ${stuff.length} results.`);
 
         return stuff;
     
