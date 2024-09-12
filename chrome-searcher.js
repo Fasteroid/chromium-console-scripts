@@ -205,11 +205,3 @@ const SEARCHER = {
     }
 
 };
-
-let test = new Map();
-test.set("hello", "world");
-test.set("foo", "bar");
-test.set("baz", "qux");
-test.set("quux", "corge");
-
-SEARCHER.search({a: test}, ["hello","world"], 10, Infinity); // search for "baz" in test object
