@@ -37,11 +37,10 @@ const SEARCHER = {
      * @returns {String} new path
      */
     getPath(path, key){
-        return (typeof key === 'symbol') ? 
-            `${path}[${key.toString()}]`
-            : key.toString().match(/[^(a-z|$|_|A-Z)]/) ? 
-            `${path}[\`${key.toString()}\`]` // evil string key or some other bullshit
-            : `${path}.${key}`;              // normal key
+        const str = String(key);
+        return str.match(/[^(a-z|$|_|A-Z)]/) ? 
+                `${path}[\`${key.toString()}\`]` // evil string key or some other bullshit
+                : `${path}.${key}`;              // normal key
     },
 
     /**
@@ -75,10 +74,10 @@ const SEARCHER = {
      */
     advToString(thing){
         let type = typeof(thing);
-        let value = "failed..."
+        let value = "failed...";
         try{
             switch(type){
-                case 'symbol': value = thing.description; break; // ugh
+                case 'symbol': value = `Symbol(${thing.description})`; break; // ugh
                 case 'string': value = `"${thing}"`; break;
                 case 'function': 
                     let temp = this.functionRegex.exec(thing + "");
@@ -87,7 +86,7 @@ const SEARCHER = {
                     break;
                 case 'object':
                     if( thing instanceof Array ){
-                        value = `[...]`
+                        value = `[...]`;
                         type = "array";
                     }
                     else {
@@ -119,7 +118,7 @@ const SEARCHER = {
         }
         args[0] = `(${id}) ${path} = %c${type} %c${value}`;
 
-        console.log(...args)
+        console.log(...args);
     },
 
     search(obj, SEARCH_KEYS=[], MAX_SEARCH_DEPTH=10, MAX_SEARCH_WIDTH=100, path="", depth=0, refs=new WeakSet(), stuff=[]) {
@@ -132,47 +131,65 @@ const SEARCHER = {
             // Avoid infinite recursion
             if( refs.has(obj) ){ return; }
             else if( obj !== null ){ refs.add(obj); }
-    
-            bruh: for (const key in obj) {
 
-                let value = obj[key]; // if we hit a css sheet this will throw an exception
+            let values = Object.entries(obj);
+            values.forEach( (pair) => {
+                pair[0] = this.getPath(path, pair[0]);
+                pair[2] = pair[0];
+            });
+
+            if( obj instanceof Map ){ 
+                const map_stuff = Array.from(obj.entries());
+                for( let pair of map_stuff ){
+                    const key = this.advToString(pair[0])[1]; // description of key as best we can
+                    pair[0] = `${path}.get(${key})`; 
+                    pair[2] = key;
+                }
+                values.push(...map_stuff);
+            }
+    
+            bruh: for (const [newpath, value, key] of values) {
+
                 if( value === null || value === undefined ){ continue; } // skip null
-                if( value && value.window == window ){ continue; } // no.
+                // if( value && value.window == window ){ continue; } // no.
                 let type = typeof(value);
-                let newpath = this.getPath(path, key);
                 if( this.isBanned(newpath) ){ 
                     continue bruh; 
                 }
 
                 switch(type){
+                    
                     case 'function':
-                        let code = (value+"")
-                        if( this.includesPartial(SEARCH_KEYS, code) ){
-                            this.advLog(value, newpath, stuff)
-                        }
                         this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);
+                        let code = (value+"");
+                        if( this.includesPartial(SEARCH_KEYS, code) ){
+                            this.advLog(value, newpath, stuff);
+                            continue bruh;
+                        }
                     break;
                     case 'object':
+                        this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);
                         if( this.includesPartial(SEARCH_KEYS, value.constructor?.name ?? "") ){
-                            this.advLog(value, newpath, stuff)
+                            this.advLog(value, newpath, stuff);
+                            continue bruh;
                         }
-                        this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);          
                     break;
                     case 'string':
                         if( this.includesPartial(SEARCH_KEYS, value) ){
-                            this.advLog(value, newpath, stuff)
+                            this.advLog(value, newpath, stuff);
+                            continue bruh;
                         }
                     break;
                     case 'symbol':
                         if( this.includesPartial(SEARCH_KEYS, value.description) ){
-                            this.advLog(value, newpath, stuff)
+                            this.advLog(value, newpath, stuff);
+                            continue bruh;
                         }
                     break;
                 }
 
                 if( this.includesPartial(SEARCH_KEYS, key) ){
-                    this.advLog(value, newpath, stuff)
-                    continue bruh;
+                    this.advLog(value, newpath, stuff);
                 }
 
             }
@@ -189,3 +206,10 @@ const SEARCHER = {
 
 };
 
+let test = new Map();
+test.set("hello", "world");
+test.set("foo", "bar");
+test.set("baz", "qux");
+test.set("quux", "corge");
+
+SEARCHER.search({a: test}, ["hello","world"], 10, Infinity); // search for "baz" in test object
