@@ -27,7 +27,9 @@ const SEARCHER = {
         function:  "color: #fc83fc;",
     },
 
-    BANNED_KEYS: ["document"], // traversal will stop at these keys; this is semi-hardcoded for your own good.
+    BANNED_KEYS: ["outerHTML","innerHTML","parentNode","parentElement"], // traversal will stop at these keys; this is semi-hardcoded for your own good.
+
+    MAX_STR_LOG_LENGTH: 255, // strings longer than this will be truncated
 
     /**
      * @param {String} path - current path
@@ -69,7 +71,7 @@ const SEARCHER = {
     /**
      * better toString that actually tells you what it is specifically if it's not a string
      * @param {Object} thing
-     * @returns {String}
+     * @returns {[String, String]} [type, value]
      */
     advToString(thing){
         let type = typeof(thing);
@@ -109,7 +111,15 @@ const SEARCHER = {
     advLog(thing, path, stuff=[]){
         let id = stuff.push(thing) - 1;
         let [type, value] = this.advToString(thing);
-        console.log( `(${id}) ${path} = %c${type} %c${value}`, "color: #ff944d;", this.COLORS[type] )
+
+        let args = [ undefined, "color: #ff944d;", this.COLORS[type] ];
+        if( value.length > this.MAX_STR_LOG_LENGTH ){
+            value = value.slice(0, this.MAX_STR_LOG_LENGTH) + "...";
+            args.push("(long string truncated)");
+        }
+        args[0] = `(${id}) ${path} = %c${type} %c${value}`;
+
+        console.log(...args)
     },
 
     search(obj, SEARCH_KEYS=[], MAX_SEARCH_DEPTH=10, MAX_SEARCH_WIDTH=100, path="", depth=0, refs=new WeakSet(), stuff=[]) {
@@ -148,19 +158,22 @@ const SEARCHER = {
                         }
                         this.search(value, SEARCH_KEYS, MAX_SEARCH_DEPTH, MAX_SEARCH_WIDTH, newpath, depth+1, refs, stuff);          
                     break;
+                    case 'string':
+                        if( this.includesPartial(SEARCH_KEYS, value) ){
+                            this.advLog(value, newpath, stuff)
+                        }
+                    break;
+                    case 'symbol':
+                        if( this.includesPartial(SEARCH_KEYS, value.description) ){
+                            this.advLog(value, newpath, stuff)
+                        }
+                    break;
                 }
 
                 if( this.includesPartial(SEARCH_KEYS, key) ){
                     this.advLog(value, newpath, stuff)
                     continue bruh;
                 }
-                
-                let text = this.advToString(value)
-                if( this.includesPartial(SEARCH_KEYS, text) ){
-                    this.advLog(value, newpath, stuff)
-                    continue bruh;
-                }
-        
 
             }
         }
