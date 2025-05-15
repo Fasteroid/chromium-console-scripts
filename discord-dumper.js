@@ -13,18 +13,16 @@
 */
 
 let DiscordMessages = "";
-let MessageHeader;
+let LastAuthor;
 let totalLogged = 0;
 let scroller =  $('[class^="scrollerInner"]');
 function msgLog(msg){
-    if( msg.className.search("message") == 0 ){
-        checkForHeader = msg.querySelector("h2");
-        if( checkForHeader ){
-            MessageHeader = checkForHeader.firstChild.firstChild.innerText + ": ";
-        }
-        DiscordMessages = DiscordMessages + MessageHeader
-        DiscordMessages = DiscordMessages + msg.firstChild.lastChild.innerText + "\n";
-    }
+    let thisAuthor = msg.querySelector('[class^="header"] [class^="username"]')?.innerText;
+    if( thisAuthor ){ LastAuthor = thisAuthor }
+    
+    let msgContent = msg.querySelector('[id^="message-content"]')?.firstChild?.innerText;
+    msgContent = msgContent?.replaceAll("\n", "\n\t")
+    DiscordMessages += `${LastAuthor}:\n\t${msgContent}\n`;
 }
 function printLogged(){ console.log(DiscordMessages) };
 
@@ -36,8 +34,8 @@ let observer = new MutationObserver(
         for( let change of mutations ){
             let msg = change.addedNodes[0]
             if( msg ){
-            count++;
-            msgLog(msg)
+                count++;
+                msgLog(msg)
             }
         }
         console.log("Appended "+count+" messages");
