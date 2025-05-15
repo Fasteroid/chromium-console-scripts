@@ -22,7 +22,7 @@ function msgLog(msg){
     
     let msgContent = msg.querySelector('[id^="message-content"]')?.firstChild?.innerText;
     msgContent = msgContent?.replaceAll("\n", "\n\t")
-    DiscordMessages += `${LastAuthor}:\n\t${msgContent}\n`;
+    DiscordMessages += `${LastAuthor}:\n\t${msgContent}\n\n`;
 }
 function printLogged(){ console.log(DiscordMessages) };
 
