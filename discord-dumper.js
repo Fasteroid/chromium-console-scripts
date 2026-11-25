@@ -15,14 +15,15 @@
 let DiscordMessages = "";
 let LastAuthor;
 let totalLogged = 0;
-let scroller =  $('[class^="scrollerInner"]');
+let scroller =  $('[class$="scrollerInner"]');
 function msgLog(msg){
-    let thisAuthor = msg.querySelector('[class^="header"] [class^="username"]')?.innerText;
+    let thisAuthor = msg.querySelector('[id^="message-username"]')?.firstChild?.innerText;
     if( thisAuthor ){ LastAuthor = thisAuthor }
     
-    let msgContent = msg.querySelector('[id^="message-content"]')?.firstChild?.innerText;
+    let msgContent = msg.querySelector('[id^="message-content"]')?.firstChild?.innerText ?? '[attached media, no text content]';
+    let timestamp = msg.querySelector('[class$="timestamp"]')?.lastChild?.innerText;
     msgContent = msgContent?.replaceAll("\n", "\n\t")
-    DiscordMessages += `${LastAuthor}:\n\t${msgContent}\n\n`;
+    DiscordMessages += `[${timestamp}]\n${LastAuthor}:\n\t${msgContent}\n\n`;
 }
 function printLogged(){ console.log(DiscordMessages) };
 
